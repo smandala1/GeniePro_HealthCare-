@@ -4,24 +4,110 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #1F2937;
+  --primary: #2F80ED;
+  --primary-dark: #1D6DD4;
+  --accent: #2EC4B6;
+  --accent-dark: #25A99D;
+  --brand-green: #6EDC8C;
+  --brand-lightblue: #56CCF2;
+  --surface: #F7FAFC;
+  --border: #e2e8f0;
+  --muted: #64748b;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), "Inter", Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-500 text-white hover:bg-primary-600 px-4 py-2 rounded-md font-medium transition-colors;
+  }
+  .btn-accent {
+    @apply bg-accent-500 text-white hover:bg-accent-600 px-4 py-2 rounded-md font-medium transition-colors;
+  }
+  .card-base {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+  }
+
+  /* Gradient CTA buttons — used on landing page */
+  .btn-gradient {
+    background: linear-gradient(135deg, #2F80ED, #2EC4B6);
+    color: #fff;
+    font-weight: 600;
+    transition: all 200ms ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-gradient:hover {
+    background: linear-gradient(135deg, #1D6DD4, #25A99D);
+    transform: scale(1.02);
+    box-shadow: 0 10px 28px rgba(47, 128, 237, 0.28);
+  }
+  .btn-gradient:active {
+    transform: scale(0.98);
+  }
+
+  /* Outline secondary buttons */
+  .btn-outline {
+    background: #fff;
+    color: #1F2937;
+    border: 2px solid #d1d5db;
+    font-weight: 600;
+    transition: all 200ms ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-outline:hover {
+    border-color: #2F80ED;
+    color: #2F80ED;
+    background: #F0F9FF;
+  }
+
+  /* Nav link underline animation */
+  .nav-link {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 2px;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 200ms ease;
+  }
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: #2F80ED;
+    transition: width 200ms ease;
+  }
+  .nav-link:hover {
+    color: #2F80ED;
+  }
+  .nav-link:hover::after {
+    width: 100%;
   }
 }

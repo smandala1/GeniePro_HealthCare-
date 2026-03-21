@@ -1,0 +1,244 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          String    @default("CANDIDATE")
+  isActive      Boolean   @default(true)
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  candidateProfile  CandidateProfile?
+  recruiterProfile  RecruiterProfile?
+  sentMessages      Message[]         @relation("MessageSender")
+  receivedMessages  Message[]         @relation("MessageReceiver")
+  notifications     Notification[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model CandidateProfile {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialty       String?
+  subSpecialty    String?
+  yearsExperience Int?
+  skills          String    @default("[]")
+  certifications  String    @default("[]")
+  resumeUrl       String?
+  location        String?
+  availability    String?
+  desiredSalary   String?
+  bio             String?
+  linkedInUrl     String?
+  licenseNumber   String?
+  licenseState    String?
+  phone           String?
+  workHistory     WorkHistory[]
+  applications    Application[]
+  savedJobs       SavedJob[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model WorkHistory {
+  id                  String    @id @default(cuid())
+  candidateProfileId  String
+  candidateProfile    CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  employer            String
+  title               String
+  startDate           DateTime
+  endDate             DateTime?
+  isCurrent           Boolean   @default(false)
+  description         String?
+  location            String?
+  createdAt           DateTime  @default(now())
+}
+
+model RecruiterProfile {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company     String
+  position    String?
+  phone       String?
+  website     String?
+  logoUrl     String?
+  description String?
+  address     String?
+  city        String?
+  state       String?
+  jobs        Job[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Job {
+  id                  String    @id @default(cuid())
+  title               String
+  specialty           String
+  subSpecialty        String?
+  type                String
+  location            String
+  city                String?
+  state               String?
+  isRemote            Boolean   @default(false)
+  salaryMin           Int?
+  salaryMax           Int?
+  salaryType          String    @default("ANNUAL")
+  description         String
+  requirements        String
+  benefits            String?
+  shiftType           String?
+  experienceRequired  Int?
+  country             String?
+  ceipalId            String?   @unique
+  status              String    @default("DRAFT")
+  isFeatured          Boolean   @default(false)
+  viewCount           Int       @default(0)
+  recruiterId         String
+  recruiterProfile    RecruiterProfile @relation(fields: [recruiterId], references: [id])
+  applications        Application[]
+  savedBy             SavedJob[]
+  postedAt            DateTime?
+  expiresAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([specialty])
+  @@index([status])
+  @@index([recruiterId])
+}
+
+model Application {
+  id                  String    @id @default(cuid())
+  jobId               String
+  job                 Job       @relation(fields: [jobId], references: [id])
+  candidateId         String
+  candidateProfile    CandidateProfile @relation(fields: [candidateId], references: [id])
+  status              String    @default("APPLIED")
+  coverLetter         String?
+  resumeUrlSnapshot   String?
+  recruiterNotes      String?
+  interviewDate       DateTime?
+  offerAmount         String?
+  statusHistory       ApplicationStatusHistory[]
+  appliedAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([jobId, candidateId])
+  @@index([status])
+  @@index([candidateId])
+  @@index([jobId])
+}
+
+model ApplicationStatusHistory {
+  id              String      @id @default(cuid())
+  applicationId   String
+  application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromStatus      String?
+  toStatus        String
+  changedBy       String
+  note            String?
+  changedAt       DateTime    @default(now())
+}
+
+model SavedJob {
+  id                  String    @id @default(cuid())
+  candidateId         String
+  candidateProfile    CandidateProfile @relation(fields: [candidateId], references: [id])
+  jobId               String
+  job                 Job       @relation(fields: [jobId], references: [id])
+  savedAt             DateTime  @default(now())
+
+  @@unique([candidateId, jobId])
+}
+
+model Message {
+  id          String    @id @default(cuid())
+  fromId      String
+  from        User      @relation("MessageSender", fields: [fromId], references: [id])
+  toId        String
+  to          User      @relation("MessageReceiver", fields: [toId], references: [id])
+  subject     String?
+  content     String
+  isRead      Boolean   @default(false)
+  parentId    String?
+  parent      Message?  @relation("MessageThread", fields: [parentId], references: [id])
+  replies     Message[] @relation("MessageThread")
+  createdAt   DateTime  @default(now())
+
+  @@index([toId])
+  @@index([fromId])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String
+  title       String
+  body        String
+  link        String?
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Testimonial {
+  id           String   @id @default(cuid())
+  name         String
+  role         String
+  company      String?
+  content      String
+  avatarUrl    String?
+  rating       Int      @default(5)
+  isActive     Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+}
+
+model SiteSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  role      String
+  rating    Int
+  body      String
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+
+  @@index([status])
+}
+
+model Referral {
+  id           String    @id @default(cuid())
+  referrerId   String
+  refereeEmail String
+  status       String    @default("PENDING")
+  sentAt       DateTime  @default(now())
+  joinedAt     DateTime?
+
+  @@index([referrerId])
+}

@@ -7,10 +7,17 @@ export const LoginSchema = z.object({
 
 export const RegisterSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(["CANDIDATE", "RECRUITER"]),
   company: z.string().optional(),
+  profession: z.string().optional(),
+  licensedStates: z.array(z.string()).optional(),
+  preferredStates: z.array(z.string()).optional(),
+  compactLicense: z.boolean().optional(),
+  smsConsent: z.boolean().optional(),
 })
 
 export const JobPostingSchema = z.object({

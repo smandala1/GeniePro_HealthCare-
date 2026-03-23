@@ -24,7 +24,18 @@ export async function POST(req: NextRequest) {
     })
 
     if (data.role === "CANDIDATE") {
-      await prisma.candidateProfile.create({ data: { userId: user.id } })
+      await prisma.candidateProfile.create({
+        data: {
+          userId: user.id,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          profession: data.profession,
+          licensedStates: data.licensedStates ? JSON.stringify(data.licensedStates) : "[]",
+          preferredStates: data.preferredStates ? JSON.stringify(data.preferredStates) : "[]",
+          compactLicense: data.compactLicense ?? false,
+          smsConsent: data.smsConsent ?? false,
+        },
+      })
     } else if (data.role === "RECRUITER") {
       await prisma.recruiterProfile.create({
         data: { userId: user.id, company: data.company || "My Company" },

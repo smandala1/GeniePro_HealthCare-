@@ -6,8 +6,26 @@ import { signIn } from "next-auth/react"
 import {
   X, Upload, CheckCircle2, Loader2, Eye, EyeOff, AlertCircle,
 } from "lucide-react"
-import { SPECIALTIES } from "@/lib/constants"
+import { SPECIALTIES, US_STATES } from "@/lib/constants"
 import type { ModalJob } from "@/hooks/useApplyModal"
+
+// All 50 states + DC sorted alphabetically
+const ALL_STATES = [...US_STATES].sort()
+
+const PROFESSIONS = [
+  "Registered Nurse (RN)",
+  "Licensed Practical Nurse (LPN)",
+  "CNA / Nursing Assistant",
+  "Allied Health Professional",
+  "Physical Therapist",
+  "Occupational Therapist",
+  "Radiologic Technologist",
+  "Social Worker",
+  "Nurse Practitioner (NP)",
+  "Physician Assistant",
+  "Non-Clinical / Administrative",
+  "Other",
+]
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -24,8 +42,7 @@ function formatFileSize(b: number) {
   return (b / (1024 * 1024)).toFixed(1) + " MB"
 }
 
-const ALLOWED_RESUME = [".pdf", ".doc", ".docx"]
-const ALLOWED_CERTS  = [".pdf", ".jpg", ".jpeg", ".png"]
+const ALLOWED_CERTS = [".pdf", ".jpg", ".jpeg", ".png"]
 const MAX_CERTS = 5
 
 function FileChip({ name, size, onRemove }: { name: string; size?: number; onRemove: () => void }) {
@@ -103,6 +120,76 @@ function UploadZone({
   )
 }
 
+// ── State multi-select ────────────────────────────────────────────────────────
+
+function StateMultiSelect({
+  selected,
+  onChange,
+  label,
+  helper,
+  required,
+}: {
+  selected: string[]
+  onChange: (states: string[]) => void
+  label: string
+  helper: string
+  required?: boolean
+}) {
+  function toggle(state: string) {
+    if (selected.includes(state)) {
+      onChange(selected.filter((s) => s !== state))
+    } else {
+      onChange([...selected, state])
+    }
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-gray-700">
+        {label}{required && <span className="text-red-400 ml-1">*</span>}
+      </label>
+      <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-xl p-2 bg-white">
+        <div className="grid grid-cols-5 gap-0.5">
+          {ALL_STATES.map((state) => (
+            <label
+              key={state}
+              className="flex items-center gap-1 px-1.5 py-1 rounded-lg hover:bg-gray-50 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(state)}
+                onChange={() => toggle(state)}
+                className="rounded border-gray-300 accent-[#2F80ED] shrink-0"
+              />
+              <span className="text-xs text-gray-700">{state}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map((state) => (
+            <span
+              key={state}
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 rounded-full text-xs text-blue-700"
+            >
+              {state}
+              <button
+                type="button"
+                onClick={() => toggle(state)}
+                className="hover:text-red-500 transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <p className="text-xs text-gray-400">{helper}</p>
+    </div>
+  )
+}
+
 // ── Main Modal ────────────────────────────────────────────────────────────────
 
 export default function ApplyModal({ job, onClose, onSuccess }: Props) {
@@ -119,10 +206,18 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
   const [certFiles, setCertFiles] = useState<File[]>([])
   const certInputRef = useRef<HTMLInputElement>(null)
 
+  // New fields
+  const [licensedStates, setLicensedStates] = useState<string[]>([])
+  const [preferredStates, setPreferredStates] = useState<string[]>([])
+  const [compactLicense, setCompactLicense] = useState(false)
+  const [smsConsent, setSmsConsent] = useState(false)
+
   const [form, setForm] = useState({
-    name: session?.user?.name ?? "",
+    firstName: "",
+    lastName: "",
     email: session?.user?.email ?? "",
     phone: "",
+    profession: "",
     specialty: job.specialty ?? "",
     yearsExperience: "",
     availability: "",
@@ -135,9 +230,11 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
   // Sync session data when it loads
   useEffect(() => {
     if (session) {
+      const parts = (session.user?.name ?? "").trim().split(/\s+/)
       setForm((p) => ({
         ...p,
-        name: session.user?.name ?? p.name,
+        firstName: parts[0] ?? p.firstName,
+        lastName: parts.slice(1).join(" ") || p.lastName,
         email: session.user?.email ?? p.email,
       }))
     }
@@ -165,9 +262,12 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!isLoggedIn && !form.name.trim()) { setError("Please enter your full name."); return }
+    if (!isLoggedIn && !form.firstName.trim()) { setError("Please enter your first name."); return }
+    if (!isLoggedIn && !form.lastName.trim()) { setError("Please enter your last name."); return }
     if (!isLoggedIn && !form.email.trim()) { setError("Please enter your email."); return }
     if (!isLoggedIn && form.password.length < 8) { setError("Password must be at least 8 characters."); return }
+    if (!form.profession) { setError("Please select your profession."); return }
+    if (licensedStates.length === 0) { setError("Please select at least one licensed state."); return }
     setLoading(true); setError(""); setEmailExists(false)
 
     try {
@@ -189,7 +289,19 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
         const regRes = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: form.name, email: form.email, password: form.password, role: "CANDIDATE" }),
+          body: JSON.stringify({
+            name: `${form.firstName} ${form.lastName}`.trim(),
+            firstName: form.firstName,
+            lastName: form.lastName,
+            email: form.email,
+            password: form.password,
+            role: "CANDIDATE",
+            profession: form.profession,
+            licensedStates,
+            preferredStates,
+            compactLicense,
+            smsConsent,
+          }),
         })
         const regData = await regRes.json()
         if (!regRes.ok) {
@@ -203,12 +315,17 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
       }
 
       // 4. Update profile
-      const profileData: Record<string, string | number | string[]> = {}
+      const profileData: Record<string, string | number | boolean | string[]> = {}
       if (form.phone) profileData.phone = form.phone
       if (resumeUrl) profileData.resumeUrl = resumeUrl
       if (form.yearsExperience) profileData.yearsExperience = parseInt(form.yearsExperience)
       if (form.availability) profileData.availability = form.availability
       if (form.specialty) profileData.specialty = form.specialty
+      if (form.profession) profileData.profession = form.profession
+      if (licensedStates.length > 0) profileData.licensedStates = licensedStates
+      if (preferredStates.length > 0) profileData.preferredStates = preferredStates
+      profileData.compactLicense = compactLicense
+      profileData.smsConsent = smsConsent
       if (Object.keys(profileData).length > 0) {
         await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profileData) })
       }
@@ -305,15 +422,22 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
               </div>
             )}
 
-            {/* ── Section 1: Personal info (hidden if logged in) ── */}
+            {/* ── Section 1: Personal info (not logged in only) ── */}
             {!isLoggedIn && (
               <section>
                 <h3 className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4">Personal Info</h3>
                 <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">Full Name</label>
-                    <input type="text" value={form.name} onChange={(e) => update("name", e.target.value)} required placeholder="Jane Smith"
-                      className="h-11 w-full px-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-gray-700">First Name</label>
+                      <input type="text" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} required placeholder="Jane"
+                        className="h-11 w-full px-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-gray-700">Last Name</label>
+                      <input type="text" value={form.lastName} onChange={(e) => update("lastName", e.target.value)} required placeholder="Smith"
+                        className="h-11 w-full px-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all" />
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">Email Address</label>
@@ -322,7 +446,7 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">Phone Number</label>
-                    <input type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="+1 (555) 000-0000"
+                    <input type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} required placeholder="+1 (555) 000-0000"
                       className="h-11 w-full px-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all" />
                   </div>
                 </div>
@@ -338,6 +462,19 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
                   <input type="text" value={job.title} readOnly
                     className="h-11 w-full px-4 rounded-xl border border-gray-100 bg-gray-50 text-sm text-gray-500 cursor-not-allowed" />
                 </div>
+
+                {/* Profession */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">
+                    Profession / Role <span className="text-red-400">*</span>
+                  </label>
+                  <select value={form.profession} onChange={(e) => update("profession", e.target.value)} required
+                    className="h-11 w-full px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all">
+                    <option value="">Select profession</option>
+                    {PROFESSIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">Specialty</label>
@@ -354,6 +491,40 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
                       className="h-11 w-full px-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all" />
                   </div>
                 </div>
+
+                {/* Licensed States */}
+                <StateMultiSelect
+                  selected={licensedStates}
+                  onChange={setLicensedStates}
+                  label="States Licensed to Practice"
+                  helper="Select all states where you hold an active license"
+                  required
+                />
+
+                {/* Compact License */}
+                <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={compactLicense}
+                      onChange={(e) => setCompactLicense(e.target.checked)}
+                      className="mt-0.5 rounded border-gray-300 accent-[#2F80ED] shrink-0"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">I hold a Compact Nursing License (NLC)</p>
+                      <p className="text-xs text-gray-400 mt-0.5">A compact license allows you to practice in 40+ states</p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Preferred Work Location */}
+                <StateMultiSelect
+                  selected={preferredStates}
+                  onChange={setPreferredStates}
+                  label="Preferred Destination States (optional)"
+                  helper="Where would you like to work?"
+                />
+
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">Availability / Start Date</label>
                   <input type="date" value={form.availability} onChange={(e) => update("availability", e.target.value)}
@@ -462,6 +633,26 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
                 </div>
               </section>
             )}
+
+            {/* ── Section 6: SMS Consent ── */}
+            <section className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={smsConsent}
+                  onChange={(e) => setSmsConsent(e.target.checked)}
+                  required
+                  className="mt-0.5 rounded border-gray-300 accent-[#2F80ED] shrink-0"
+                />
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  I agree to receive SMS messages from GeniePro Healthcare about job opportunities, assignments, and updates.
+                  Message frequency varies. Msg &amp; data rates may apply. Reply STOP to unsubscribe.{" "}
+                  <a href="/privacy-policy" className="text-blue-500 hover:underline">Privacy Policy</a>.
+                  <span className="text-red-400 ml-1">*</span>
+                </p>
+              </label>
+            </section>
+
           </form>
         </div>
 
@@ -474,7 +665,7 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
           <button
             type="submit"
             form="apply-form"
-            disabled={loading}
+            disabled={loading || !smsConsent}
             className="flex items-center justify-center gap-2 h-11 px-8 rounded-full text-white text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60 shrink-0"
             style={{ background: "linear-gradient(135deg, #2F80ED, #2EC4B6)" }}
           >

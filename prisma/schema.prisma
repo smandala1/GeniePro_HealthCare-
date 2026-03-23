@@ -46,6 +46,13 @@ model CandidateProfile {
   licenseNumber   String?
   licenseState    String?
   phone           String?
+  firstName       String?
+  lastName        String?
+  profession      String?
+  licensedStates  String    @default("[]")
+  preferredStates String    @default("[]")
+  compactLicense  Boolean   @default(false)
+  smsConsent      Boolean   @default(false)
   workHistory     WorkHistory[]
   applications    Application[]
   savedJobs       SavedJob[]

@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 
 const SPECIALTIES = [
   {
@@ -63,10 +64,11 @@ export default function SpecialtiesSection() {
               style={{ height: "256px" }}
             >
               {/* Background image */}
-              <img
+              <Image
                 src={s.image}
                 alt={s.label}
-                className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.04] transition-transform duration-500"
+                fill
+                className="object-cover object-center group-hover:scale-[1.04] transition-transform duration-500"
               />
 
               {/* Dark gradient overlay */}

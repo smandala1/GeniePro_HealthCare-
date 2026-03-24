@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import {
@@ -69,28 +70,22 @@ export function Sidebar({ user }: SidebarProps) {
       )}>
         <Link href={roleBase} className="flex items-center min-w-0">
           {collapsed ? (
-            <img
+            <Image
               src="/Shorter_logo.png"
               alt="GeniePro"
+              width={100}
+              height={100}
               className="transition-all duration-300"
-              style={{
-                mixBlendMode: "screen",
-                height: "100px",
-                width: "100px",
-                objectFit: "contain",
-              }}
+              style={{ mixBlendMode: "screen", objectFit: "contain" }}
             />
           ) : (
-            <img
+            <Image
               src="/GeniePro Health.png"
               alt="GeniePro Healthcare"
+              width={200}
+              height={350}
               className="transition-all duration-300"
-              style={{
-                mixBlendMode: "screen",
-                height: "350px",
-                width: "auto",
-                objectFit: "contain",
-              }}
+              style={{ mixBlendMode: "screen", objectFit: "contain" }}
             />
           )}
         </Link>

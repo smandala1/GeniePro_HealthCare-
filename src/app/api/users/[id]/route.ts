@@ -9,6 +9,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  const existing = await prisma.user.findUnique({ where: { id } })
+  if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
   const body = await req.json()
   const user = await prisma.user.update({
     where: { id },
@@ -24,6 +27,9 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  const existing = await prisma.user.findUnique({ where: { id } })
+  if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
   await prisma.user.delete({ where: { id } })
   return NextResponse.json({ message: "Deleted" })
 }

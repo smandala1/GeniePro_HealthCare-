@@ -3,6 +3,7 @@
 import { useState, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { signIn } from "next-auth/react"
 import {
   AlertCircle, Loader2, Eye, EyeOff, Stethoscope,
@@ -184,10 +185,11 @@ function RegisterForm() {
 
           {/* Mobile logo */}
           <div className="lg:hidden mb-8">
-            <img
+            <Image
               src="/Shorter_logo.png"
               alt="GeniePro Healthcare"
-              className="h-16 w-auto"
+              width={200}
+              height={64}
               style={{ mixBlendMode: "multiply" }}
             />
           </div>

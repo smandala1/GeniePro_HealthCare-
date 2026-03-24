@@ -4,6 +4,7 @@ import { useState, Suspense } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { AlertCircle, Loader2, Eye, EyeOff, Stethoscope, Building2, ShieldCheck } from "lucide-react"
 import { AuthLeftPanel } from "@/components/auth/AuthLeftPanel"
 
@@ -66,10 +67,11 @@ function LoginForm() {
 
           {/* Mobile logo */}
           <div className="lg:hidden mb-8">
-            <img
+            <Image
               src="/Shorter_logo.png"
               alt="GeniePro Healthcare"
-              className="h-16 w-auto"
+              width={200}
+              height={64}
               style={{ mixBlendMode: "multiply" }}
             />
           </div>

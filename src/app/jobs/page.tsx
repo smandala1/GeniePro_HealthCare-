@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   Search, MapPin, Clock, Briefcase, Building2,
   DollarSign, X, Filter, ChevronDown, Star, Users,
@@ -551,15 +552,12 @@ export default function JobsPage() {
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
           <Link href="/">
-            <img
+            <Image
               src="/GeniePro Health.png"
               alt="GeniePro Healthcare"
-              style={{
-                mixBlendMode: "multiply",
-                height: "40px",
-                width: "auto",
-                objectFit: "contain",
-              }}
+              width={120}
+              height={40}
+              style={{ mixBlendMode: "multiply", objectFit: "contain" }}
             />
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">

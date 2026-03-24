@@ -4,6 +4,11 @@ import path from "path"
 
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_EXTS = [".pdf", ".doc", ".docx"]
+const ALLOWED_MIME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,12 +18,27 @@ export async function POST(req: NextRequest) {
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
+
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "File too large. Max 5MB." }, { status: 400 })
+      return NextResponse.json(
+        { error: "File too large. Maximum allowed size is 5MB." },
+        { status: 400 }
+      )
     }
+
     const ext = path.extname(file.name).toLowerCase()
     if (!ALLOWED_EXTS.includes(ext)) {
-      return NextResponse.json({ error: "Invalid file type. PDF, DOC, DOCX only." }, { status: 400 })
+      return NextResponse.json(
+        { error: "Invalid file extension. Only .pdf, .doc, and .docx files are allowed." },
+        { status: 400 }
+      )
+    }
+
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { error: "Invalid file type. Only PDF, DOC, and DOCX MIME types are accepted." },
+        { status: 400 }
+      )
     }
 
     const id = (formData.get("userId") as string) || `tmp-${Date.now()}`

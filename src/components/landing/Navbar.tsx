@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Menu, X } from "lucide-react"
 import EmployerModal from "@/components/EmployerModal"
 import ContactPopup from "@/components/ContactPopup"
@@ -25,15 +26,12 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="shrink-0">
-            <img
+            <Image
               src="/GeniePro Health.png"
               alt="GeniePro Healthcare"
-              style={{
-                mixBlendMode: "multiply",
-                height: "250px",
-                width: "250px",
-                objectFit: "contain",
-              }}
+              width={250}
+              height={250}
+              style={{ mixBlendMode: "multiply", objectFit: "contain" }}
             />
           </Link>
 

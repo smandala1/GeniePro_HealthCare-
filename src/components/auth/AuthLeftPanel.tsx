@@ -1,5 +1,7 @@
 "use client"
 
+import Image from "next/image"
+
 interface AuthLeftPanelProps {
   role: "CANDIDATE" | "RECRUITER"
   variant: "login" | "register"
@@ -68,11 +70,13 @@ export function AuthLeftPanel({ role, variant }: AuthLeftPanelProps) {
       />
 
       {/* Logo */}
-      <img
+      <Image
         src="/GeniePro Health.png"
         alt="GeniePro Healthcare"
+        width={300}
+        height={250}
         className="relative z-10"
-        style={{ mixBlendMode: "multiply", height: "250px", width: "300px", objectFit: "contain" }}
+        style={{ mixBlendMode: "multiply", objectFit: "contain" }}
       />
 
       {/* Center: stat cards */}

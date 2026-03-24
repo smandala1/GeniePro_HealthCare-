@@ -1,17 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Settings, Globe, Mail, Database,
-  Loader2, CheckCircle2,
+  Loader2, CheckCircle2, AlertCircle,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function AdminSettingsPage() {
   const [platform, setPlatform] = useState({
-    siteName:       "GeniePro Healthcare",
-    siteTagline:    "Connecting Healthcare Professionals",
-    supportEmail:   "support@genieprohealthcare.com",
+    siteName:        "GeniePro Healthcare",
+    siteTagline:     "Connecting Healthcare Professionals",
+    supportEmail:    "support@genieprohealthcare.com",
     allowNewSignups: true,
     requireApproval: false,
     maintenanceMode: false,
@@ -26,15 +26,74 @@ export default function AdminSettingsPage() {
     fromEmail: "no-reply@genieprohealthcare.com",
   })
 
-  const [saving, setSaving] = useState<string | null>(null)
-  const [saved, setSaved]   = useState<string | null>(null)
+  const [loadError, setLoadError] = useState("")
+  const [saving, setSaving]       = useState<string | null>(null)
+  const [saved, setSaved]         = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Fetch settings on mount
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then((r) => r.json())
+      .then((data: Record<string, string>) => {
+        setPlatform({
+          siteName:        data.siteName        ?? "GeniePro Healthcare",
+          siteTagline:     data.siteTagline     ?? "Connecting Healthcare Professionals",
+          supportEmail:    data.supportEmail    ?? "support@genieprohealthcare.com",
+          allowNewSignups: data.allowNewSignups !== "false",
+          requireApproval: data.requireApproval === "true",
+          maintenanceMode: data.maintenanceMode === "true",
+        })
+        setEmail({
+          smtpHost:  data.smtpHost  ?? "",
+          smtpPort:  data.smtpPort  ?? "587",
+          smtpUser:  data.smtpUser  ?? "",
+          smtpPass:  data.smtpPass  ?? "",
+          fromName:  data.fromName  ?? "GeniePro Healthcare",
+          fromEmail: data.fromEmail ?? "no-reply@genieprohealthcare.com",
+        })
+      })
+      .catch(() => setLoadError("Failed to load settings."))
+  }, [])
 
   async function save(section: string) {
     setSaving(section)
-    await new Promise((r) => setTimeout(r, 800))
+    setSaveError(null)
+
+    const payload: Record<string, string> =
+      section === "platform"
+        ? {
+            siteName:        platform.siteName,
+            siteTagline:     platform.siteTagline,
+            supportEmail:    platform.supportEmail,
+            allowNewSignups: String(platform.allowNewSignups),
+            requireApproval: String(platform.requireApproval),
+            maintenanceMode: String(platform.maintenanceMode),
+          }
+        : {
+            smtpHost:  email.smtpHost,
+            smtpPort:  email.smtpPort,
+            smtpUser:  email.smtpUser,
+            smtpPass:  email.smtpPass,
+            fromName:  email.fromName,
+            fromEmail: email.fromEmail,
+          }
+
+    const res = await fetch("/api/admin/settings", {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(payload),
+    })
+
     setSaving(null)
-    setSaved(section)
-    setTimeout(() => setSaved(null), 2000)
+
+    if (res.ok) {
+      setSaved(section)
+      setTimeout(() => setSaved(null), 2000)
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setSaveError(data.error ?? "Save failed. Please try again.")
+    }
   }
 
   return (
@@ -43,6 +102,20 @@ export default function AdminSettingsPage() {
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">Platform Settings</h1>
         <p className="text-sm text-gray-500 mt-1">Configure global platform behavior and integrations.</p>
       </div>
+
+      {loadError && (
+        <div className="mb-5 flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {loadError}
+        </div>
+      )}
+
+      {saveError && (
+        <div className="mb-5 flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {saveError}
+        </div>
+      )}
 
       <div className="space-y-5">
         {/* Platform settings */}

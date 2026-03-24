@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import Navbar from "@/components/landing/Navbar"
 import HeroSection from "@/components/landing/HeroSection"
 import StatsBar from "@/components/landing/StatsBar"
@@ -34,15 +35,12 @@ export default function Home() {
       <footer className="bg-gray-900 py-10">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-5">
           <div className="flex items-center gap-3">
-            <img
+            <Image
               src="/GeniePro Health.png"
               alt="GeniePro Healthcare"
-              style={{
-                mixBlendMode: "screen",
-                height: "40px",
-                width: "auto",
-                objectFit: "contain",
-              }}
+              width={120}
+              height={40}
+              style={{ mixBlendMode: "screen", objectFit: "contain" }}
             />
             <span className="text-sm text-white/40">
               © {new Date().getFullYear()} GeniePro Healthcare · Alpharetta, GA

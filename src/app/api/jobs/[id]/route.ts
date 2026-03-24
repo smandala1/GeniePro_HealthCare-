@@ -22,6 +22,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+  const existing = await prisma.job.findUnique({ where: { id } })
+  if (!existing) return NextResponse.json({ error: "Job not found" }, { status: 404 })
+
   const body = await req.json()
   const job = await prisma.job.update({
     where: { id },
@@ -37,6 +40,9 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const existing = await prisma.job.findUnique({ where: { id } })
+  if (!existing) return NextResponse.json({ error: "Job not found" }, { status: 404 })
 
   await prisma.job.update({ where: { id }, data: { status: "CLOSED" } })
   return NextResponse.json({ message: "Job closed" })

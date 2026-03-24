@@ -10,7 +10,7 @@ export default function ReferralBanner() {
 
   const referralLink = typeof window !== "undefined"
     ? `${window.location.origin}/auth/register`
-    : "https://geniepro.com/auth/register"
+    : "https://genieprohealthcare.com/auth/register"
 
   function handleSendInvite(e: React.FormEvent) {
     e.preventDefault()

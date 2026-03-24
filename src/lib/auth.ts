@@ -1,10 +1,16 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import GoogleProvider from "next-auth/providers/google"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { sendWelcomeEmail } from "@/lib/email"
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -34,11 +40,44 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async signIn({ user, account }) {
+      // Auto-create user on first Google sign-in
+      if (account?.provider === "google" && user.email) {
+        const existing = await prisma.user.findUnique({ where: { email: user.email } })
+        if (!existing) {
+          const newUser = await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name ?? user.email.split("@")[0],
+              password: "",
+              role: "CANDIDATE",
+              isActive: true,
+              avatarUrl: user.image ?? null,
+              candidateProfile: { create: {} },
+            },
+          })
+          await sendWelcomeEmail(newUser.email, newUser.name ?? "there").catch(() => {})
+        } else if (!existing.isActive) {
+          return false
+        }
+      }
+      return true
+    },
+    async jwt({ token, user, account }) {
       if (user) {
+        // Credentials login — user object has role
         token.id = user.id
-        token.role = user.role as "ADMIN" | "RECRUITER" | "CANDIDATE"
-        token.avatarUrl = user.avatarUrl
+        token.role = ((user as { role?: string }).role ?? "CANDIDATE") as "ADMIN" | "RECRUITER" | "CANDIDATE"
+        token.avatarUrl = (user as { avatarUrl?: string | null }).avatarUrl ?? null
+      }
+      if (account?.provider === "google" && token.email) {
+        // Fetch role from DB for Google sign-ins
+        const dbUser = await prisma.user.findUnique({ where: { email: token.email } })
+        if (dbUser) {
+          token.id = dbUser.id
+          token.role = dbUser.role as "ADMIN" | "RECRUITER" | "CANDIDATE"
+          token.avatarUrl = dbUser.avatarUrl
+        }
       }
       return token
     },

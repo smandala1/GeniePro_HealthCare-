@@ -1,5 +1,3 @@
-import Link from "next/link"
-
 export default function AboutSection() {
   return (
     <section id="about" className="bg-white py-24">

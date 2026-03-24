@@ -135,12 +135,14 @@ function StateMultiSelect({
   helper: string
   required?: boolean
 }) {
-  function toggle(state: string) {
-    if (selected.includes(state)) {
-      onChange(selected.filter((s) => s !== state))
-    } else {
-      onChange([...selected, state])
-    }
+  const available = ALL_STATES.filter((s) => !selected.includes(s))
+
+  function addState(state: string) {
+    if (state && !selected.includes(state)) onChange([...selected, state])
+  }
+
+  function removeState(state: string) {
+    onChange(selected.filter((s) => s !== state))
   }
 
   return (
@@ -148,36 +150,26 @@ function StateMultiSelect({
       <label className="text-sm font-medium text-gray-700">
         {label}{required && <span className="text-red-400 ml-1">*</span>}
       </label>
-      <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-xl p-2 bg-white">
-        <div className="grid grid-cols-5 gap-0.5">
-          {ALL_STATES.map((state) => (
-            <label
-              key={state}
-              className="flex items-center gap-1 px-1.5 py-1 rounded-lg hover:bg-gray-50 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={selected.includes(state)}
-                onChange={() => toggle(state)}
-                className="rounded border-gray-300 accent-[#2F80ED] shrink-0"
-              />
-              <span className="text-xs text-gray-700">{state}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+      <select
+        value=""
+        onChange={(e) => { addState(e.target.value); e.currentTarget.value = "" }}
+        className="h-11 w-full px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+      >
+        <option value="">Add a state…</option>
+        {available.map((s) => <option key={s} value={s}>{s}</option>)}
+      </select>
       {selected.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {selected.map((state) => (
             <span
               key={state}
-              className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 rounded-full text-xs text-blue-700"
+              className="inline-flex items-center gap-1.5 bg-[#EFF6FF] text-[#2F80ED] rounded-full px-3 py-1 text-xs font-medium"
             >
               {state}
               <button
                 type="button"
-                onClick={() => toggle(state)}
-                className="hover:text-red-500 transition-colors"
+                onClick={() => removeState(state)}
+                className="hover:text-red-500 transition-colors leading-none"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -427,7 +419,7 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
               <section>
                 <h3 className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4">Personal Info</h3>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <label className="text-sm font-medium text-gray-700">First Name</label>
                       <input type="text" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} required placeholder="Jane"
@@ -463,18 +455,6 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
                     className="h-11 w-full px-4 rounded-xl border border-gray-100 bg-gray-50 text-sm text-gray-500 cursor-not-allowed" />
                 </div>
 
-                {/* Profession */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-700">
-                    Profession / Role <span className="text-red-400">*</span>
-                  </label>
-                  <select value={form.profession} onChange={(e) => update("profession", e.target.value)} required
-                    className="h-11 w-full px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all">
-                    <option value="">Select profession</option>
-                    {PROFESSIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">Specialty</label>
@@ -492,6 +472,18 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
                   </div>
                 </div>
 
+                {/* Profession */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">
+                    Profession / Role <span className="text-red-400">*</span>
+                  </label>
+                  <select value={form.profession} onChange={(e) => update("profession", e.target.value)} required
+                    className="h-11 w-full px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all">
+                    <option value="">Select profession…</option>
+                    {PROFESSIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+
                 {/* Licensed States */}
                 <StateMultiSelect
                   selected={licensedStates}
@@ -499,6 +491,14 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
                   label="States Licensed to Practice"
                   helper="Select all states where you hold an active license"
                   required
+                />
+
+                {/* Preferred Work Location */}
+                <StateMultiSelect
+                  selected={preferredStates}
+                  onChange={setPreferredStates}
+                  label="Preferred Work Locations"
+                  helper="Where would you like to work? (optional)"
                 />
 
                 {/* Compact License */}
@@ -516,14 +516,6 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
                     </div>
                   </label>
                 </div>
-
-                {/* Preferred Work Location */}
-                <StateMultiSelect
-                  selected={preferredStates}
-                  onChange={setPreferredStates}
-                  label="Preferred Destination States (optional)"
-                  helper="Where would you like to work?"
-                />
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">Availability / Start Date</label>

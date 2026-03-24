@@ -9,9 +9,8 @@ import {
   CheckCircle2, Loader2, Bookmark, BookmarkCheck,
   Star, Users, DollarSign, Send,
 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatSalary, formatRelativeTime } from "@/lib/utils"
+import { formatSalary } from "@/lib/utils"
 import { SPECIALTIES, JOB_TYPES } from "@/lib/constants"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())

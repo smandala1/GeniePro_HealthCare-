@@ -387,7 +387,7 @@ function JobDrawer({ job, onClose, onOpenModal }: { job: Job; onClose: () => voi
                 </button>
               </div>
               <p className="text-center text-xs text-gray-400">
-                "Apply Now" uses your saved profile · "Full Application" lets you add details
+                &ldquo;Apply Now&rdquo; uses your saved profile · &ldquo;Full Application&rdquo; lets you add details
               </p>
             </div>
           )}
@@ -760,27 +760,7 @@ export default function JobsPage() {
         </div>
       )}
 
-      <style>{`
-        input[type='range']::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #2F80ED;
-          cursor: pointer;
-          border: 2px solid white;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-        }
-        input[type='range']::-moz-range-thumb {
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #2F80ED;
-          cursor: pointer;
-          border: 2px solid white;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-        }
-      `}</style>
+
     </div>
   )
 }

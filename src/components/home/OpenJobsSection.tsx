@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { MapPin, Briefcase, Clock, ArrowRight, Building2 } from "lucide-react"
+import ApplyModal from "@/components/ApplyModal"
 
 interface Job {
   id: string
@@ -47,9 +48,12 @@ function timeAgo(dateStr?: string) {
   return `${Math.floor(days / 30)}mo ago`
 }
 
+type SelectedJob = { id: string; title: string; company: string }
+
 export function OpenJobsSection() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedJob, setSelectedJob] = useState<SelectedJob | null>(null)
 
   useEffect(() => {
     fetch("/api/jobs?status=ACTIVE&limit=6")
@@ -104,7 +108,6 @@ export function OpenJobsSection() {
         {/* Job Cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {jobs.map((job) => {
-            const applyUrl = `/auth/register?jobId=${job.id}&jobTitle=${encodeURIComponent(job.title)}&company=${encodeURIComponent(job.recruiterProfile.company)}`
             const specialtyClass = SPECIALTY_COLORS[job.specialty] ?? "bg-gray-100 text-gray-600"
             const typeLabel = TYPE_LABELS[job.type] ?? job.type
             const location = [job.city, job.state].filter(Boolean).join(", ") || job.location
@@ -152,13 +155,13 @@ export function OpenJobsSection() {
                 </p>
 
                 {/* Apply button */}
-                <Link
-                  href={applyUrl}
+                <button
+                  onClick={() => setSelectedJob({ id: job.id, title: job.title, company: job.recruiterProfile.company })}
                   className="mt-auto flex items-center justify-center gap-2 h-10 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90"
                   style={{ background: "linear-gradient(135deg, #2F80ED, #2EC4B6)" }}
                 >
                   Apply Now <ArrowRight className="w-4 h-4" />
-                </Link>
+                </button>
               </div>
             )
           })}
@@ -174,6 +177,14 @@ export function OpenJobsSection() {
           </Link>
         </div>
       </div>
+
+      {selectedJob && (
+        <ApplyModal
+          job={selectedJob}
+          onClose={() => setSelectedJob(null)}
+          onSuccess={() => setSelectedJob(null)}
+        />
+      )}
     </section>
   )
 }

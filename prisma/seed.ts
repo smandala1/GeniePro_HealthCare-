@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PrismaClient } from "@prisma/client"
-import { PrismaLibSql } from "@prisma/adapter-libsql"
+import { PrismaPg } from "@prisma/adapter-pg"
 import bcrypt from "bcryptjs"
 
-const adapter = new PrismaLibSql({ url: process.env.DATABASE_URL ?? "file:./dev.db" })
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter } as any)
 
 async function main() {

@@ -6,8 +6,7 @@ import Image from "next/image"
 import {
   Search, MapPin, Clock, Briefcase, Building2,
   DollarSign, X, Filter, ChevronDown, Star, Users,
-  ArrowLeft, CheckCircle2, Loader2, SlidersHorizontal,
-  ArrowRight, Send,
+  ArrowLeft, SlidersHorizontal, ArrowRight, Send,
 } from "lucide-react"
 import { SPECIALTIES, JOB_TYPES } from "@/lib/constants"
 import ApplyModal from "@/components/ApplyModal"
@@ -201,9 +200,6 @@ function CardSkeleton() {
 // ─── Job Detail Drawer ───────────────────────────────────────────────────────
 
 function JobDrawer({ job, onClose, onOpenModal }: { job: Job; onClose: () => void; onOpenModal: () => void }) {
-  const [applying, setApplying] = useState(false)
-  const [applied, setApplied] = useState(false)
-  const [applyError, setApplyError] = useState("")
 
   const spec = SPEC_STYLE[job.specialty] ?? { pill: "bg-gray-100 text-gray-600", label: job.specialty.toLowerCase() }
   const salary = compactSalary(job.salaryMin, job.salaryMax)
@@ -213,28 +209,6 @@ function JobDrawer({ job, onClose, onOpenModal }: { job: Job; onClose: () => voi
   const descLines = (job.description ?? "").split("\n").filter(Boolean)
   const reqLines  = (job.requirements ?? "").split("\n").filter(Boolean)
   const benLines  = (job.benefits ?? "").split("\n").filter(Boolean)
-
-  // Quick apply for logged-in users
-  async function handleQuickApply() {
-    setApplying(true)
-    setApplyError("")
-    const res = await fetch("/api/applications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId: job.id }),
-    })
-    if (res.ok) {
-      setApplied(true)
-    } else if (res.status === 401) {
-      // Not logged in → open apply modal
-      onOpenModal()
-      onClose()
-    } else {
-      const d = await res.json()
-      setApplyError(d.error || "Failed to apply.")
-    }
-    setApplying(false)
-  }
 
   return (
     <>
@@ -364,41 +338,14 @@ function JobDrawer({ job, onClose, onOpenModal }: { job: Job; onClose: () => voi
 
         {/* Apply footer */}
         <div className="px-6 py-4 border-t border-gray-100 bg-white shrink-0">
-          {applied ? (
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-green-50 border border-green-200">
-              <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-green-800">Application submitted!</p>
-                <p className="text-xs text-green-600">The recruiter will review your profile.</p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {applyError && (
-                <p className="text-xs text-red-600 text-center">{applyError}</p>
-              )}
-              <div className="flex gap-3">
-                <button
-                  onClick={handleQuickApply}
-                  disabled={applying}
-                  className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
-                  style={{ background: "linear-gradient(135deg, #2F80ED, #2EC4B6)" }}
-                >
-                  {applying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {applying ? "Applying…" : "Apply Now"}
-                </button>
-                <button
-                  onClick={() => { onOpenModal(); onClose() }}
-                  className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-semibold hover:border-gray-300 transition-colors"
-                >
-                  Full Application <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-              <p className="text-center text-xs text-gray-400">
-                &ldquo;Apply Now&rdquo; uses your saved profile · &ldquo;Full Application&rdquo; lets you add details
-              </p>
-            </div>
-          )}
+          <button
+            onClick={() => { onOpenModal(); onClose() }}
+            className="w-full h-12 flex items-center justify-center gap-2 rounded-2xl text-white text-sm font-semibold transition-all hover:opacity-90 hover:shadow-md"
+            style={{ background: "linear-gradient(135deg, #2F80ED, #2EC4B6)" }}
+          >
+            <Send className="h-4 w-4" />
+            Apply Now
+          </button>
         </div>
       </div>
     </>

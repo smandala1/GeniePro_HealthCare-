@@ -1,15 +1,15 @@
 import { PrismaClient } from "@prisma/client"
-import { PrismaLibSql } from "@prisma/adapter-libsql"
-import path from "path"
+import { PrismaPg } from "@prisma/adapter-pg"
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
 function createClient() {
-  const dbUrl =
-    process.env.DATABASE_URL ?? `file:${path.resolve(process.cwd(), "prisma/dev.db")}`
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const adapter = new PrismaLibSql({ url: dbUrl }) as any
-  return new PrismaClient({ adapter })
+  const connectionString = process.env.DATABASE_URL!
+  const adapter = new PrismaPg({ connectionString })
+  return new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+  })
 }
 
 export const prisma = globalForPrisma.prisma ?? createClient()

@@ -5,12 +5,18 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { sendWelcomeEmail } from "@/lib/email"
 
+const googleProvider =
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      })
+    : null
+
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-    }),
+    ...(googleProvider ? [googleProvider] : []),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -19,22 +25,26 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          })
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        })
+          if (!user || !user.isActive) return null
 
-        if (!user || !user.isActive) return null
+          const isValid = await bcrypt.compare(credentials.password, user.password)
+          if (!isValid) return null
 
-        const isValid = await bcrypt.compare(credentials.password, user.password)
-        if (!isValid) return null
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role as "ADMIN" | "RECRUITER" | "CANDIDATE",
-          avatarUrl: user.avatarUrl,
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role as "ADMIN" | "RECRUITER" | "CANDIDATE",
+            avatarUrl: user.avatarUrl,
+          }
+        } catch (error) {
+          console.error("[AUTH] authorize error:", error)
+          return null
         }
       },
     }),

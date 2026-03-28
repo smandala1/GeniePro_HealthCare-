@@ -2,7 +2,6 @@ import Link from "next/link"
 import Image from "next/image"
 import Navbar from "@/components/landing/Navbar"
 import HeroSection from "@/components/landing/HeroSection"
-import StatsBar from "@/components/landing/StatsBar"
 import HowItWorks from "@/components/landing/HowItWorks"
 import ReviewsSection from "@/components/landing/ReviewsSection"
 import ReferralBanner from "@/components/landing/ReferralBanner"
@@ -17,7 +16,6 @@ export default function Home() {
 
       <Navbar />
       <HeroSection />
-      <StatsBar />
       <AboutSection />
       <HowItWorks />
       <SpecialtiesSection />

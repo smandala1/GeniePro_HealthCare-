@@ -98,67 +98,74 @@ function JobCard({
   const typeLabel = TYPE_LABEL[job.type] ?? job.type
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      {/* Top row: title/company left, badges right */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-gray-900 text-base leading-snug line-clamp-2">{job.title}</h3>
-          <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
-            <Building2 className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{job.recruiterProfile.company}</span>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${spec.pill}`}>
-            {spec.label}
+    <div className="bg-white rounded-[20px] border border-gray-100 p-6 flex flex-col gap-4 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+      {/* Badges row */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${spec.pill}`}>
+          {spec.label}
+        </span>
+        {job.isFeatured && (
+          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-600">
+            ⭐ Featured
           </span>
-          {job.isFeatured && (
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-700">
-              Featured
-            </span>
-          )}
+        )}
+        {job.isRemote && (
+          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-green-50 text-green-700">
+            Remote
+          </span>
+        )}
+      </div>
+
+      {/* Title & company */}
+      <div>
+        <h3 className="font-bold text-gray-900 text-base leading-snug line-clamp-2 mb-1">{job.title}</h3>
+        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+          <Building2 className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">{job.recruiterProfile.company}</span>
         </div>
       </div>
 
-      {/* Meta row */}
-      <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-        <span className="flex items-center gap-1">
-          <MapPin className="w-3.5 h-3.5" />{location}
+      {/* Meta chips */}
+      <div className="flex flex-wrap gap-2">
+        <span className="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-lg">
+          <MapPin className="w-3 h-3" />{location}
         </span>
-        <span className="flex items-center gap-1">
-          <Briefcase className="w-3.5 h-3.5" />{typeLabel}
+        <span className="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-lg">
+          <Briefcase className="w-3 h-3" />{typeLabel}
         </span>
         {job.postedAt && (
-          <span className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" />{timeAgo(job.postedAt)}
-          </span>
-        )}
-        {salary && (
-          <span className="flex items-center gap-1 font-semibold text-gray-700">
-            <DollarSign className="w-3.5 h-3.5" />{salary}
+          <span className="inline-flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">
+            <Clock className="w-3 h-3" />{timeAgo(job.postedAt)}
           </span>
         )}
       </div>
 
+      {/* Salary */}
+      {salary && (
+        <p className="text-sm font-bold text-[#2EC4B6] flex items-center gap-1">
+          <DollarSign className="w-3.5 h-3.5" />{salary}
+        </p>
+      )}
+
       {/* Description */}
-      <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 flex-1">
+      <p className="text-gray-400 text-sm leading-relaxed line-clamp-2 flex-1">
         {job.description.replace(/<[^>]*>/g, "")}
       </p>
 
-      {/* Two buttons */}
-      <div className="flex gap-2 mt-auto">
+      {/* Buttons */}
+      <div className="flex gap-2 mt-auto pt-1">
         <button
           onClick={onView}
-          className="flex-1 h-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:border-gray-300 hover:bg-gray-50 transition-all"
+          className="flex-1 h-10 flex items-center justify-center rounded-2xl border border-gray-200 text-gray-600 text-sm font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all"
         >
-          View Details
+          View Job
         </button>
         <button
           onClick={onApply}
-          className="flex-1 h-10 flex items-center justify-center gap-1.5 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90"
+          className="flex-1 h-10 flex items-center justify-center gap-1.5 rounded-2xl text-white text-sm font-semibold transition-all hover:opacity-90 hover:shadow-md"
           style={{ background: "linear-gradient(135deg, #2F80ED, #2EC4B6)" }}
         >
-          Apply Now <ArrowRight className="h-4 w-4" />
+          Quick Apply <ArrowRight className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

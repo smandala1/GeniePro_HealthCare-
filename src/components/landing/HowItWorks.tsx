@@ -18,8 +18,70 @@ const STEPS = [
 
 export default function HowItWorks() {
   return (
-    <section className="bg-white py-24">
-      <div className="max-w-7xl mx-auto px-6">
+    <section className="relative bg-white py-24 overflow-hidden">
+
+      {/* ── Purely decorative background layer ── */}
+      <div className="absolute inset-0 pointer-events-none select-none" aria-hidden="true" style={{ zIndex: 0 }}>
+
+        {/* Soft blue radial wash — top-right */}
+        <div style={{
+          position: "absolute",
+          top: "-60px", right: "-60px",
+          width: "500px", height: "400px",
+          background: "radial-gradient(ellipse, rgba(47,128,237,0.07) 0%, transparent 70%)",
+          filter: "blur(30px)",
+        }} />
+
+        {/* Soft teal radial wash — bottom-left */}
+        <div style={{
+          position: "absolute",
+          bottom: "-60px", left: "-40px",
+          width: "420px", height: "360px",
+          background: "radial-gradient(ellipse, rgba(46,196,182,0.08) 0%, transparent 70%)",
+          filter: "blur(28px)",
+        }} />
+
+        {/* Dot grid */}
+        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="hiw-dots-pattern" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+              <circle cx="1.5" cy="1.5" r="1.4" fill="#2F80ED" opacity="0.10" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#hiw-dots-pattern)" />
+        </svg>
+
+        {/* Spinning arc — top-left corner */}
+        <svg
+          className="gp-spin-slow absolute"
+          style={{ top: "-30px", left: "-30px", opacity: 0.06, transformOrigin: "90px 90px" }}
+          width="180" height="180" viewBox="0 0 180 180"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle cx="90" cy="90" r="84" fill="none" stroke="#2F80ED" strokeWidth="2" strokeDasharray="8 10" />
+        </svg>
+
+        {/* Plus icon — upper-right */}
+        <svg className="absolute" style={{ top: "14%", right: "10%", opacity: 0.16 }} width="14" height="14" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#2EC4B6" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#2EC4B6" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+
+        {/* Plus icon — lower-left */}
+        <svg className="absolute" style={{ bottom: "18%", left: "8%", opacity: 0.14 }} width="12" height="12" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+
+        {/* Plus icon — center-bottom */}
+        <svg className="absolute" style={{ bottom: "12%", left: "48%", opacity: 0.12 }} width="10" height="10" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#56CCF2" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#56CCF2" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-6" style={{ zIndex: 1 }}>
 
         {/* Header */}
         <div className="text-center mb-14">

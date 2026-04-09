@@ -11,7 +11,7 @@ import ContactPopup from "@/components/ContactPopup"
 const NAV_LINKS = [
   { href: "/jobs",         label: "Find Jobs" },
   { href: "/#specialties", label: "Specialties" },
-  { href: "/about",        label: "About" },
+  { href: "/#about",       label: "About" },
 ]
 
 export default function Navbar() {
@@ -70,8 +70,8 @@ export default function Navbar() {
               <Image
                 src="/GeniePro Health.png"
                 alt="GeniePro Healthcare"
-                width={160}
-                height={50}
+                width={300}
+                height={300}
                 style={{ mixBlendMode: "multiply", objectFit: "contain" }}
                 onError={() => setLogoError(true)}
                 priority

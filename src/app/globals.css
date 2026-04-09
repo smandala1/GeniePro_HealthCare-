@@ -16,6 +16,10 @@
   --muted: #64748b;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
@@ -110,6 +114,33 @@ body {
   .nav-link:hover::after {
     width: 100%;
   }
+}
+
+/* ── Decorative background animations ── */
+@keyframes gp-float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-22px) scale(1.04); }
+}
+@keyframes gp-float-alt {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(18px) scale(0.96); }
+}
+@keyframes gp-pulse-blob {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.65; transform: scale(1.14); }
+}
+@keyframes gp-spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.gp-float      { animation: gp-float 9s ease-in-out infinite; }
+.gp-float-alt  { animation: gp-float-alt 11s ease-in-out infinite; }
+.gp-pulse-blob { animation: gp-pulse-blob 7s ease-in-out infinite; }
+.gp-spin-slow  { animation: gp-spin-slow 35s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-float, .gp-float-alt, .gp-pulse-blob, .gp-spin-slow { animation: none; }
 }
 
 /* Range input thumb styling */

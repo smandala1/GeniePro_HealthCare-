@@ -38,8 +38,53 @@ const SPECIALTIES = [
 
 export default function SpecialtiesSection() {
   return (
-    <section id="specialties" className="bg-white py-24">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="specialties" className="relative bg-white py-24 overflow-hidden">
+
+      {/* ── Purely decorative background layer ── */}
+      <div className="absolute inset-0 pointer-events-none select-none" aria-hidden="true" style={{ zIndex: 0 }}>
+
+        {/* Teal radial glow — top-right corner */}
+        <div style={{
+          position: "absolute",
+          top: "-80px", right: "-80px",
+          width: "520px", height: "520px",
+          background: "radial-gradient(circle, rgba(46,196,182,0.14) 0%, transparent 62%)",
+          filter: "blur(48px)",
+        }} />
+        {/* Secondary blue wash — bottom-left */}
+        <div style={{
+          position: "absolute",
+          bottom: "-60px", left: "-60px",
+          width: "360px", height: "360px",
+          background: "radial-gradient(circle, rgba(47,128,237,0.07) 0%, transparent 65%)",
+          filter: "blur(40px)",
+        }} />
+
+        {/* Dot grid */}
+        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="spec-dots-pattern" x="0" y="0" width="34" height="34" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.3" fill="#2EC4B6" opacity="0.09" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#spec-dots-pattern)" />
+        </svg>
+
+        {/* Plus icon — top-left */}
+        <svg className="absolute" style={{ top: "18%", left: "3%", opacity: 0.13 }} width="14" height="14" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+
+        {/* Plus icon — bottom-right */}
+        <svg className="absolute" style={{ bottom: "20%", right: "4%", opacity: 0.14 }} width="12" height="12" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#2EC4B6" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#2EC4B6" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-6" style={{ zIndex: 1 }}>
 
         {/* Header */}
         <div className="text-center mb-12">

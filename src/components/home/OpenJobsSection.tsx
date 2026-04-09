@@ -82,8 +82,64 @@ export function OpenJobsSection() {
   if (jobs.length === 0) return null
 
   return (
-    <section id="open-jobs" className="py-24 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6">
+    <section
+      id="open-jobs"
+      className="relative py-24 overflow-hidden"
+      style={{ background: "linear-gradient(155deg, #EBF4FF 0%, #F0FBFA 40%, #F8FAFF 70%, #ffffff 100%)" }}
+    >
+      {/* ── Purely decorative background layer ── */}
+      <div className="absolute inset-0 pointer-events-none select-none" aria-hidden="true" style={{ zIndex: 0 }}>
+
+        {/* Blue radial glow — top-left */}
+        <div style={{
+          position: "absolute", top: "-60px", left: "-40px",
+          width: "480px", height: "400px",
+          background: "radial-gradient(ellipse, rgba(47,128,237,0.12) 0%, transparent 65%)",
+          filter: "blur(40px)",
+        }} />
+
+        {/* Teal glow — bottom-right */}
+        <div style={{
+          position: "absolute", bottom: "-60px", right: "-40px",
+          width: "400px", height: "360px",
+          background: "radial-gradient(ellipse, rgba(46,196,182,0.09) 0%, transparent 65%)",
+          filter: "blur(36px)",
+        }} />
+
+        {/* Plus icon — top-right */}
+        <svg className="absolute" style={{ top: "10%", right: "5%", opacity: 0.18 }} width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+        {/* Plus icon — mid-left */}
+        <svg className="absolute" style={{ top: "50%", left: "2%", opacity: 0.14 }} width="12" height="12" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#2EC4B6" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#2EC4B6" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+        {/* Plus icon — bottom-center */}
+        <svg className="absolute" style={{ bottom: "12%", left: "50%", opacity: 0.12 }} width="10" height="10" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#56CCF2" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#56CCF2" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+        {/* Plus icon — upper center-right */}
+        <svg className="absolute" style={{ top: "20%", right: "22%", opacity: 0.13 }} width="11" height="11" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+
+        {/* Subtle dot grid */}
+        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="jobs-dots-pattern" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+              <circle cx="1.5" cy="1.5" r="1.3" fill="#2F80ED" opacity="0.07" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#jobs-dots-pattern)" />
+        </svg>
+
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-6" style={{ zIndex: 1 }}>
         {/* Header */}
         <div className="flex items-end justify-between mb-12">
           <div>

@@ -9,8 +9,123 @@ export default function HeroSection() {
 
   return (
     <>
-    <section className="bg-white overflow-hidden">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto px-6 py-20">
+    <section className="relative bg-white overflow-hidden">
+
+      {/* ── Purely decorative background layer ── */}
+      <div className="absolute inset-0 pointer-events-none select-none" aria-hidden="true" style={{ zIndex: 0 }}>
+
+        {/* Blob 1 — large teal orb, top-right */}
+        <div
+          className="gp-float absolute rounded-full"
+          style={{
+            width: "580px", height: "580px",
+            top: "-160px", right: "-160px",
+            background: "radial-gradient(circle, rgba(46,196,182,0.20) 0%, transparent 70%)",
+            filter: "blur(52px)",
+          }}
+        />
+
+        {/* Blob 2 — blue orb, bottom-left */}
+        <div
+          className="gp-float-alt absolute rounded-full"
+          style={{
+            width: "440px", height: "440px",
+            bottom: "-110px", left: "-110px",
+            background: "radial-gradient(circle, rgba(47,128,237,0.16) 0%, transparent 70%)",
+            filter: "blur(56px)",
+          }}
+        />
+
+        {/* Blob 3 — small cyan accent, center-left */}
+        <div
+          className="gp-pulse-blob absolute rounded-full"
+          style={{
+            width: "260px", height: "260px",
+            top: "38%", left: "7%",
+            background: "radial-gradient(circle, rgba(86,204,242,0.14) 0%, transparent 70%)",
+            filter: "blur(38px)",
+          }}
+        />
+
+        {/* Dot grid pattern */}
+        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="hero-dots-pattern" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+              <circle cx="1.5" cy="1.5" r="1.5" fill="#2EC4B6" opacity="0.20" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#hero-dots-pattern)" />
+        </svg>
+
+        {/* Geometric double-ring — top-left */}
+        <svg
+          className="absolute"
+          style={{ top: "48px", left: "1%", opacity: 0.10 }}
+          width="130" height="130" viewBox="0 0 130 130"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle cx="65" cy="65" r="62" fill="none" stroke="#2F80ED" strokeWidth="2" />
+          <circle cx="65" cy="65" r="44" fill="none" stroke="#2EC4B6" strokeWidth="1.2" strokeDasharray="5 7" />
+        </svg>
+
+        {/* Geometric spinning dashed ring — mid-right */}
+        <svg
+          className="gp-spin-slow absolute"
+          style={{ top: "32%", right: "3%", opacity: 0.07, transformOrigin: "40px 40px" }}
+          width="80" height="80" viewBox="0 0 80 80"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle cx="40" cy="40" r="37" fill="none" stroke="#2EC4B6" strokeWidth="2" strokeDasharray="4 6" />
+        </svg>
+
+        {/* Plus icon — upper center */}
+        <svg className="absolute" style={{ top: "16%", left: "37%", opacity: 0.16 }} width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+
+        {/* Plus icon — lower center */}
+        <svg className="absolute" style={{ top: "74%", left: "50%", opacity: 0.18 }} width="13" height="13" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#2EC4B6" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#2EC4B6" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+
+        {/* Plus icon — top-right area */}
+        <svg className="absolute" style={{ top: "9%", right: "26%", opacity: 0.20 }} width="12" height="12" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#56CCF2" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#56CCF2" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+
+        {/* Plus icon — left side */}
+        <svg className="absolute" style={{ top: "58%", left: "3%", opacity: 0.13 }} width="11" height="11" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="0" x2="8" y2="16" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="0" y1="8" x2="16" y2="8" stroke="#2F80ED" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+
+        {/* Decorative wavy stroke lines at the bottom */}
+        <svg
+          className="absolute bottom-0 left-0 w-full"
+          viewBox="0 0 1440 72"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+          style={{ height: "72px", opacity: 0.10 }}
+        >
+          <defs>
+            <linearGradient id="hero-wave-grad" x1="0" y1="0" x2="1440" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%"   stopColor="#2F80ED" />
+              <stop offset="50%"  stopColor="#2EC4B6" />
+              <stop offset="100%" stopColor="#56CCF2" />
+            </linearGradient>
+          </defs>
+          <path d="M0,36 C180,72 360,0 540,36 C720,72 900,0 1080,36 C1260,72 1380,20 1440,36"
+            fill="none" stroke="url(#hero-wave-grad)" strokeWidth="2.5" />
+          <path d="M0,52 C180,88 360,16 540,52 C720,88 900,16 1080,52 C1260,88 1380,36 1440,52"
+            fill="none" stroke="url(#hero-wave-grad)" strokeWidth="1.5" opacity="0.55" />
+        </svg>
+
+      </div>
+
+      <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto px-6 py-20" style={{ zIndex: 1 }}>
 
         {/* ── Left ── */}
         <div className="space-y-6">
@@ -24,7 +139,7 @@ export default function HeroSection() {
               borderColor: "rgba(46,196,182,0.35)",
             }}
           >
-            Trusted Healthcare Staffing
+            Trusted Healthcare Staffing Partner
           </span>
 
           {/* Headline */}
@@ -34,7 +149,7 @@ export default function HeroSection() {
           >
             Find Your Next<br />
             Healthcare Career<br />
-            Opportunity
+            Right Here
           </h1>
 
           {/* Subtext */}
@@ -58,15 +173,6 @@ export default function HeroSection() {
             >
               I&apos;m an Employer
             </button>
-          </div>
-
-          {/* Trust Stats */}
-          <div className="flex flex-wrap gap-6 text-sm text-gray-500 mt-2">
-            <span>5,000+ Open Roles</span>
-            <span className="text-gray-300 select-none hidden sm:inline">|</span>
-            <span>2,000+ Placements</span>
-            <span className="text-gray-300 select-none hidden sm:inline">|</span>
-            <span>48h Avg. Fill Time</span>
           </div>
         </div>
 
@@ -162,7 +268,7 @@ export default function HeroSection() {
               style={{ width: "8px", height: "8px", background: "#2EC4B6", marginRight: "8px" }}
             />
             <p className="font-bold text-gray-900 text-sm whitespace-nowrap">
-              12 new jobs added today
+              New jobs added Everyday
             </p>
           </div>
 

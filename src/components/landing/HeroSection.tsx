@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import EmployerModal from "@/components/EmployerModal"
 
 export default function HeroSection() {
@@ -105,11 +104,10 @@ export default function HeroSection() {
           />
 
           {/* Layer 3 — Main image */}
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/Home_New_photo.webp"
             alt="Healthcare professional"
-            width={800}
-            height={600}
             className="absolute object-cover object-top"
             style={{
               top: "50%",

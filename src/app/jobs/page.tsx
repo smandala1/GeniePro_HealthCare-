@@ -213,6 +213,11 @@ function JobDrawer({ job, onClose, onOpenModal }: { job: Job; onClose: () => voi
 
   // Quick apply for logged-in users
   async function handleQuickApply() {
+    // Ceipal jobs have an external apply URL — open it directly
+    if (job.applyUrl) {
+      window.open(job.applyUrl, "_blank", "noopener,noreferrer")
+      return
+    }
     setApplying(true)
     setApplyError("")
     const res = await fetch("/api/applications", {
@@ -385,10 +390,17 @@ function JobDrawer({ job, onClose, onOpenModal }: { job: Job; onClose: () => voi
                   {applying ? "Applying…" : "Apply Now"}
                 </button>
                 <button
-                  onClick={() => { onOpenModal(); onClose() }}
+                  onClick={() => {
+                    if (job.applyUrl) {
+                      window.open(job.applyUrl, "_blank", "noopener,noreferrer")
+                    } else {
+                      onOpenModal()
+                      onClose()
+                    }
+                  }}
                   className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-semibold hover:border-gray-300 transition-colors"
                 >
-                  Full Application <ArrowRight className="h-4 w-4" />
+                  {job.applyUrl ? "Apply on Job Board" : "Full Application"} <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
               <p className="text-center text-xs text-gray-400">

@@ -1,9 +1,11 @@
 import "dotenv/config"
-import path from "node:path"
 import { defineConfig } from "prisma/config"
 
-const dbUrl =
-  process.env.DATABASE_URL ?? `file:${path.resolve(process.cwd(), "prisma/dev.db")}`
+// DIRECT_URL bypasses pgbouncer — required for migrations and db push
+const url =
+  process.env.DIRECT_URL ??
+  process.env.DATABASE_URL ??
+  "postgresql://localhost:5432/geniepro"
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -11,5 +13,5 @@ export default defineConfig({
     path: "prisma/migrations",
     seed: "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
   },
-  datasource: { url: dbUrl },
+  datasource: { url },
 })

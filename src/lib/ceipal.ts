@@ -32,10 +32,10 @@ let tokenStore: TokenStore | null = null
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
 async function authenticate(): Promise<void> {
-  const res = await fetch(`${BASE_URL}/createAuthtoken`, {
+  const res = await fetch(`${BASE_URL}/createAuthtoken/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: EMAIL, password: PASSWORD, api_key: API_KEY }),
+    body: JSON.stringify({ email: EMAIL, password: PASSWORD, api_key: API_KEY, json: 1 }),
     cache: "no-store",
   })
 
@@ -44,15 +44,16 @@ async function authenticate(): Promise<void> {
     throw new Error(`Ceipal authentication failed (${res.status}): ${body}`)
   }
 
-  const data = await res.json()
-
-  if (!data.access_token) {
-    throw new Error("Ceipal auth response missing access_token")
+  // Ceipal returns XML: <root><access_token>...</access_token></root>
+  const text = await res.text()
+  const match = text.match(/<access_token>(.*?)<\/access_token>/)
+  if (!match) {
+    throw new Error(`Ceipal auth: no access_token in response: ${text.slice(0, 200)}`)
   }
 
   tokenStore = {
-    accessToken:  data.access_token,
-    refreshToken: data.refresh_token ?? "",
+    accessToken:  match[1],
+    refreshToken: "",
     expiresAt:    Date.now() + 55 * 60 * 1000, // 55 min
   }
 }
@@ -69,12 +70,13 @@ async function refreshAuth(): Promise<void> {
     })
     if (!res.ok) return authenticate()
 
-    const data = await res.json()
-    if (!data.access_token) return authenticate()
+    const text = await res.text()
+    const match = text.match(/<access_token>(.*?)<\/access_token>/)
+    if (!match) return authenticate()
 
     tokenStore = {
       ...tokenStore,
-      accessToken: data.access_token,
+      accessToken: match[1],
       expiresAt:   Date.now() + 55 * 60 * 1000,
     }
   } catch {

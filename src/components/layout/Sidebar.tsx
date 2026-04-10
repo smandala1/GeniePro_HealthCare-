@@ -73,8 +73,8 @@ export function Sidebar({ user }: SidebarProps) {
             <Image
               src="/Shorter_logo.png"
               alt="GeniePro"
-              width={100}
-              height={100}
+              width={300}
+              height={300}
               className="transition-all duration-300"
               style={{ mixBlendMode: "screen", objectFit: "contain" }}
             />
@@ -82,8 +82,8 @@ export function Sidebar({ user }: SidebarProps) {
             <Image
               src="/GeniePro Health.png"
               alt="GeniePro Healthcare"
-              width={200}
-              height={350}
+              width={300}
+              height={300}
               className="transition-all duration-300"
               style={{ mixBlendMode: "screen", objectFit: "contain" }}
             />

@@ -6,7 +6,7 @@ import { JobPostingSchema } from "@/lib/validations"
 
 // ── Ceipal config ─────────────────────────────────────────────────────────────
 const CEIPAL_AUTH_URL = process.env.CEIPAL_AUTH_URL ?? "https://api.ceipal.com/v1/createAuthtoken/"
-const CEIPAL_JOBS_URL = process.env.CEIPAL_JOBS_URL ?? ""
+const CEIPAL_JOBS_URL = process.env.CEIPAL_JOBS_URL ?? process.env.CEIPAL_API_URL ?? ""
 const CEIPAL_USERNAME = process.env.CEIPAL_USERNAME ?? ""
 const CEIPAL_PASSWORD = process.env.CEIPAL_PASSWORD ?? ""
 const CEIPAL_API_KEY  = process.env.CEIPAL_API_KEY  ?? ""

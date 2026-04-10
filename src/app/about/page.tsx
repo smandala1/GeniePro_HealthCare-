@@ -244,7 +244,7 @@ export default function AboutPage() {
             Ready to Find Your Next Role?
           </h2>
           <p className="text-white/75 text-base mb-8 leading-relaxed">
-            Join thousands of healthcare professionals who've already found their next opportunity
+            Join thousands of healthcare professionals who&apos;ve already found their next opportunity
             through GeniePro — fast, verified, and without the runaround.
           </p>
           <div className="flex flex-wrap justify-center gap-4">

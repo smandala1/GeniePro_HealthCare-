@@ -92,8 +92,9 @@ export async function GET(req: NextRequest) {
       })
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to fetch from Ceipal"
-      // Fall through to DB path on Ceipal failure
-      console.error("[/api/jobs] Ceipal error, falling back to DB:", message)
+      console.error("[/api/jobs] Ceipal error:", message)
+      // On Vercel there is no persistent DB, so return empty rather than 500
+      return NextResponse.json({ jobs: [], total: 0, page, totalPages: 0 })
     }
   }
 

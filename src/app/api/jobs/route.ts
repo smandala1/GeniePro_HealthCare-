@@ -37,21 +37,26 @@ export async function GET(req: NextRequest) {
   }
   if (location) where.location = { contains: location }
 
-  const [jobs, total] = await Promise.all([
-    prisma.job.findMany({
-      where,
-      include: {
-        recruiterProfile: { select: { company: true, logoUrl: true, city: true, state: true } },
-        _count: { select: { applications: true } },
-      },
-      orderBy: [{ isFeatured: "desc" }, { postedAt: "desc" }],
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    prisma.job.count({ where }),
-  ])
+  try {
+    const [jobs, total] = await Promise.all([
+      prisma.job.findMany({
+        where,
+        include: {
+          recruiterProfile: { select: { company: true, logoUrl: true, city: true, state: true } },
+          _count: { select: { applications: true } },
+        },
+        orderBy: [{ isFeatured: "desc" }, { postedAt: "desc" }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.job.count({ where }),
+    ])
 
-  return NextResponse.json({ jobs, total, page, totalPages: Math.ceil(total / limit) })
+    return NextResponse.json({ jobs, total, page, totalPages: Math.ceil(total / limit) })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to fetch jobs"
+    return NextResponse.json({ error: message, jobs: [], total: 0 }, { status: 500 })
+  }
 }
 
 export async function POST(req: NextRequest) {

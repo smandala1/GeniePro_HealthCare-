@@ -431,14 +431,19 @@ export default function JobsPage() {
   // Fetch jobs
   const fetchJobs = useCallback(async () => {
     setLoading(true)
-    const params = new URLSearchParams({ status: "ACTIVE", limit: "50" })
-    if (specialty) params.set("specialty", specialty)
-    if (jobType) params.set("type", jobType)
-    if (activeKeyword) params.set("keyword", activeKeyword)
-    if (activeLocation) params.set("location", activeLocation)
-    const data = await fetcher(`/api/jobs?${params}`)
-    setJobs(data.jobs ?? [])
-    setLoading(false)
+    try {
+      const params = new URLSearchParams({ status: "ACTIVE", limit: "50" })
+      if (specialty) params.set("specialty", specialty)
+      if (jobType) params.set("type", jobType)
+      if (activeKeyword) params.set("keyword", activeKeyword)
+      if (activeLocation) params.set("location", activeLocation)
+      const data = await fetcher(`/api/jobs?${params}`)
+      setJobs(data.jobs ?? [])
+    } catch {
+      setJobs([])
+    } finally {
+      setLoading(false)
+    }
   }, [specialty, jobType, activeKeyword, activeLocation])
 
   useEffect(() => { fetchJobs() }, [fetchJobs])
@@ -555,8 +560,8 @@ export default function JobsPage() {
             <Image
               src="/GeniePro Health.png"
               alt="GeniePro Healthcare"
-              width={120}
-              height={40}
+              width={300}
+              height={300}
               style={{ mixBlendMode: "multiply", objectFit: "contain" }}
             />
           </Link>

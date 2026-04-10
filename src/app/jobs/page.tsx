@@ -27,6 +27,7 @@ type Job = {
   salaryMin?: number | null
   salaryMax?: number | null
   salaryType?: string | null
+  payDisplay?: string | null
   description: string
   requirements?: string | null
   benefits?: string | null
@@ -35,6 +36,9 @@ type Job = {
   experienceRequired?: number | null
   postedAt: string | null
   viewCount: number
+  duration?: string | null
+  openings?: number | null
+  applyUrl?: string | null
   recruiterProfile: {
     company: string
     logoUrl?: string | null
@@ -93,7 +97,7 @@ function JobCard({
   onApply: () => void
 }) {
   const spec = SPEC_STYLE[job.specialty] ?? { pill: "bg-gray-100 text-gray-600", label: job.specialty.toLowerCase() }
-  const salary = compactSalary(job.salaryMin, job.salaryMax)
+  const salary = job.payDisplay ?? compactSalary(job.salaryMin, job.salaryMax)
   const location = [job.city, job.state].filter(Boolean).join(", ") || job.location
   const typeLabel = TYPE_LABEL[job.type] ?? job.type
 
@@ -199,7 +203,7 @@ function JobDrawer({ job, onClose, onOpenModal }: { job: Job; onClose: () => voi
   const [applyError, setApplyError] = useState("")
 
   const spec = SPEC_STYLE[job.specialty] ?? { pill: "bg-gray-100 text-gray-600", label: job.specialty.toLowerCase() }
-  const salary = compactSalary(job.salaryMin, job.salaryMax)
+  const salary = job.payDisplay ?? compactSalary(job.salaryMin, job.salaryMax)
   const location = [job.city, job.state].filter(Boolean).join(", ") || job.location
   const typeLabel = TYPE_LABEL[job.type] ?? job.type
 

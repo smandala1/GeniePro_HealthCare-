@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import useSWR from "swr"
-import { Star, CheckCircle2, XCircle, Clock } from "lucide-react"
+import { Star, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatRelativeTime } from "@/lib/utils"
@@ -34,17 +34,23 @@ function StarDisplay({ rating }: { rating: number }) {
 
 export default function AdminReviewsPage() {
   const [activeTab, setActiveTab] = useState<"PENDING" | "APPROVED" | "REJECTED">("PENDING")
+  const [actionError, setActionError] = useState("")
   const { data: reviews, isLoading, mutate } = useSWR<Review[]>(
     `/api/admin/reviews?status=${activeTab}`,
     fetcher
   )
 
   async function updateStatus(id: string, status: string) {
-    await fetch(`/api/admin/reviews/${id}`, {
+    setActionError("")
+    const res = await fetch(`/api/admin/reviews/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     })
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}))
+      setActionError(d.error ?? "Failed to update review status.")
+    }
     mutate()
   }
 
@@ -60,6 +66,12 @@ export default function AdminReviewsPage() {
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">Review Moderation</h1>
         <p className="text-sm text-gray-500 mt-1">Approve or reject user-submitted reviews.</p>
       </div>
+
+      {actionError && (
+        <div className="mb-4 flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <AlertCircle className="h-4 w-4 shrink-0" /> {actionError}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl bg-gray-100 w-fit mb-6">

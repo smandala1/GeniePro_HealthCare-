@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { ApplicationSchema } from "@/lib/validations"
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -32,8 +33,13 @@ export async function GET(req: NextRequest) {
     const apps = await prisma.application.findMany({
       where,
       include: {
-        candidateProfile: { include: { user: { select: { name: true, email: true, avatarUrl: true } } } },
-        job: { select: { title: true, specialty: true } },
+        candidateProfile: {
+          include: {
+            user: { select: { name: true, email: true, avatarUrl: true } },
+          },
+          // phone is a scalar on candidateProfile — included by default, no extra select needed
+        },
+        job: { select: { id: true, title: true, specialty: true, location: true } },
       },
       orderBy: { appliedAt: "desc" },
     })
@@ -41,15 +47,22 @@ export async function GET(req: NextRequest) {
   }
 
   if (session.user.role === "ADMIN") {
-    const apps = await prisma.application.findMany({
-      include: {
-        job: { select: { title: true } },
-        candidateProfile: { include: { user: { select: { name: true } } } },
-      },
-      orderBy: { appliedAt: "desc" },
-      take: 100,
-    })
-    return NextResponse.json(apps)
+    const safeInt = (val: string | null, fallback: number) => { const n = parseInt(val ?? "", 10); return Number.isFinite(n) ? n : fallback }
+    const page  = Math.max(1, safeInt(searchParams.get("page"), 1))
+    const limit = Math.max(1, Math.min(100, safeInt(searchParams.get("limit"), 50)))
+    const [apps, total] = await Promise.all([
+      prisma.application.findMany({
+        include: {
+          job: { select: { title: true } },
+          candidateProfile: { include: { user: { select: { name: true } } } },
+        },
+        orderBy: { appliedAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.application.count(),
+    ])
+    return NextResponse.json({ apps, total, page, totalPages: Math.ceil(total / limit) })
   }
 
   return NextResponse.json([])
@@ -61,7 +74,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { jobId, coverLetter } = await req.json()
+  const body = await req.json()
+  const parsed = ApplicationSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 })
+  }
+  const { jobId, coverLetter } = parsed.data
+  const bodyResumeUrl: string | undefined = typeof body.resumeUrl === "string" ? body.resumeUrl : undefined
+
   const profile = await prisma.candidateProfile.findUnique({ where: { userId: session.user.id } })
   if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 })
 
@@ -75,7 +95,7 @@ export async function POST(req: NextRequest) {
       jobId,
       candidateId: profile.id,
       coverLetter,
-      resumeUrlSnapshot: profile.resumeUrl,
+      resumeUrlSnapshot: bodyResumeUrl || profile.resumeUrl,
     },
   })
   await prisma.applicationStatusHistory.create({

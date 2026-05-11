@@ -29,6 +29,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+  // Candidates may only update their own profile
+  if (session.user.role === "CANDIDATE") {
+    if (id !== "me") {
+      const target = await prisma.candidateProfile.findUnique({ where: { id }, select: { userId: true } })
+      if (!target || target.userId !== session.user.id) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+    }
+  }
+
   const body = await req.json()
   const data = CandidateProfileSchema.parse(body)
 

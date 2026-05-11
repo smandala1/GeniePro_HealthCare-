@@ -58,10 +58,46 @@ const EMPTY_FORM: PostJobForm = {
 
 export default function RecruiterJobsPage() {
   const [showForm, setShowForm] = useState(false)
+  const [editingJobId, setEditingJobId] = useState<string | null>(null)
   const [form, setForm] = useState<PostJobForm>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState("")
   const [filter, setFilter] = useState("")
+
+  function openEdit(job: Job) {
+    setEditingJobId(job.id)
+    setFormError("")
+    fetch(`/api/jobs/${job.id}`)
+      .then((r) => { if (!r.ok) throw new Error("Failed to load job"); return r.json() })
+      .then((data) => {
+        setForm({
+          title:              data.title ?? "",
+          specialty:          data.specialty ?? "",
+          type:               data.type ?? "",
+          location:           data.location ?? "",
+          salaryMin:          data.salaryMin ? String(data.salaryMin) : "",
+          salaryMax:          data.salaryMax ? String(data.salaryMax) : "",
+          description:        data.description ?? "",
+          requirements:       data.requirements ?? "",
+          benefits:           data.benefits ?? "",
+          experienceRequired: data.experienceRequired ? String(data.experienceRequired) : "",
+          publish:            data.status === "ACTIVE",
+        })
+        setShowForm(true)
+      })
+      .catch(() => {
+        setEditingJobId(null)
+        setFormError("Failed to load job details. Please try again.")
+        setShowForm(true)
+      })
+  }
+
+  function closeForm() {
+    setShowForm(false)
+    setEditingJobId(null)
+    setForm(EMPTY_FORM)
+    setFormError("")
+  }
 
   const { data, isLoading } = useSWR("/api/jobs?mine=true&status=ACTIVE&limit=50", fetcher)
   const { data: drafts } = useSWR("/api/jobs?mine=true&status=DRAFT&limit=50", fetcher)
@@ -86,25 +122,32 @@ export default function RecruiterJobsPage() {
   async function submitJob(publish: boolean) {
     setSubmitting(true)
     setFormError("")
-    const res = await fetch("/api/jobs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        salaryMin:          form.salaryMin ? parseInt(form.salaryMin) : null,
-        salaryMax:          form.salaryMax ? parseInt(form.salaryMax) : null,
-        experienceRequired: form.experienceRequired ? parseInt(form.experienceRequired) : null,
-        publish,
-      }),
-    })
+    const toInt = (s: string) => { const n = parseInt(s, 10); return Number.isFinite(n) ? n : null }
+    const payload = {
+      ...form,
+      salaryMin:          toInt(form.salaryMin),
+      salaryMax:          toInt(form.salaryMax),
+      experienceRequired: toInt(form.experienceRequired),
+      publish,
+    }
+    const res = editingJobId
+      ? await fetch(`/api/jobs/${editingJobId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, status: publish ? "ACTIVE" : "DRAFT" }),
+        })
+      : await fetch("/api/jobs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
     if (res.ok) {
-      setForm(EMPTY_FORM)
-      setShowForm(false)
+      closeForm()
       await mutate("/api/jobs?mine=true&status=ACTIVE&limit=50")
       await mutate("/api/jobs?mine=true&status=DRAFT&limit=50")
     } else {
       const d = await res.json()
-      setFormError(d.error || "Failed to post job")
+      setFormError(d.error || (editingJobId ? "Failed to update job" : "Failed to post job"))
     }
     setSubmitting(false)
   }
@@ -117,7 +160,7 @@ export default function RecruiterJobsPage() {
           <p className="text-sm text-gray-500 mt-1">Manage all your open positions.</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => { setEditingJobId(null); setForm(EMPTY_FORM); setShowForm(true) }}
           className="flex items-center gap-2 h-10 px-4 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-colors"
         >
           <Plus className="h-4 w-4" /> Post a Job
@@ -150,7 +193,9 @@ export default function RecruiterJobsPage() {
         <Card className="mb-6 border-primary-200">
           <CardHeader className="pb-4">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Plus className="h-4 w-4 text-primary-500" /> New Job Posting
+              {editingJobId
+                ? <><Edit3 className="h-4 w-4 text-primary-500" /> Edit Job Posting</>
+                : <><Plus className="h-4 w-4 text-primary-500" /> New Job Posting</>}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -210,7 +255,7 @@ export default function RecruiterJobsPage() {
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />} Publish Job
               </button>
-              <button onClick={() => setShowForm(false)} className="ml-auto h-10 px-3 rounded-xl text-gray-400 hover:text-gray-600 text-sm transition-colors">
+              <button onClick={closeForm} className="ml-auto h-10 px-3 rounded-xl text-gray-400 hover:text-gray-600 text-sm transition-colors">
                 Cancel
               </button>
             </div>
@@ -273,7 +318,11 @@ export default function RecruiterJobsPage() {
                     >
                       <Eye className="h-3.5 w-3.5" /> Pipeline
                     </Link>
-                    <button className="h-8 w-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-primary-500 hover:border-primary-200 transition-colors">
+                    <button
+                      onClick={() => openEdit(job)}
+                      className="h-8 w-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-primary-500 hover:border-primary-200 transition-colors"
+                      title="Edit job"
+                    >
                       <Edit3 className="h-3.5 w-3.5" />
                     </button>
                   </div>

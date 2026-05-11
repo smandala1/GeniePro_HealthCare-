@@ -214,7 +214,7 @@ export default function AdminSettingsPage() {
           <CardContent className="space-y-2">
             {[
               { label: "Version",   value: "1.0.0" },
-              { label: "Database",  value: "SQLite (dev.db)" },
+              { label: "Database",  value: process.env.NODE_ENV === "development" ? "SQLite (dev.db)" : "PostgreSQL (Neon)" },
               { label: "Framework", value: "Next.js 14 (App Router)" },
               { label: "Auth",      value: "NextAuth v4" },
             ].map(({ label, value }) => (

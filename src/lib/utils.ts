@@ -10,8 +10,13 @@ export function formatDate(date: Date | string) {
   return format(new Date(date), "MMM d, yyyy")
 }
 
-export function formatRelativeTime(date: Date | string) {
-  return formatDistanceToNow(new Date(date), { addSuffix: true })
+export function formatRelativeTime(date: Date | string | null | undefined) {
+  if (!date) return ""
+  try {
+    return formatDistanceToNow(new Date(date), { addSuffix: true })
+  } catch {
+    return ""
+  }
 }
 
 export function formatSalary(min?: number | null, max?: number | null, type = "ANNUAL") {
@@ -23,8 +28,9 @@ export function formatSalary(min?: number | null, max?: number | null, type = "A
   return `Up to ${fmt(max!)}${suffix}`
 }
 
-export function getInitials(name: string) {
-  return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+export function getInitials(name?: string | null) {
+  if (!name?.trim()) return "?"
+  return name.trim().split(/\s+/).map(n => n[0]).join("").toUpperCase().slice(0, 2)
 }
 
 export function calculateProfileCompleteness(profile: {

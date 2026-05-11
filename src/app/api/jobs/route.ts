@@ -179,6 +179,11 @@ async function fetchAllCeipalJobs(): Promise<ReturnType<typeof transformJob>[]> 
   return all
 }
 
+function safeInt(val: string | null, fallback: number): number {
+  const n = parseInt(val ?? "", 10)
+  return Number.isFinite(n) ? n : fallback
+}
+
 // ── GET /api/jobs ─────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -186,8 +191,8 @@ export async function GET(req: NextRequest) {
   const type        = searchParams.get("type")
   const keyword     = searchParams.get("keyword")
   const location    = searchParams.get("location")
-  const page        = Math.max(1, parseInt(searchParams.get("page")  || "1"))
-  const limit       = Math.min(50, parseInt(searchParams.get("limit") || "12"))
+  const page        = Math.max(1,  safeInt(searchParams.get("page"),  1))
+  const limit       = Math.max(1, Math.min(50, safeInt(searchParams.get("limit"), 12)))
   const status      = searchParams.get("status") || "ACTIVE"
   const recruiterId = searchParams.get("recruiterId")
   const mine        = searchParams.get("mine") === "true"

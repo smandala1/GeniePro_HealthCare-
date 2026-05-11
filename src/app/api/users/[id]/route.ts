@@ -27,6 +27,9 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  if (id === session.user.id) {
+    return NextResponse.json({ error: "You cannot delete your own account" }, { status: 400 })
+  }
   const existing = await prisma.user.findUnique({ where: { id } })
   if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 })
 

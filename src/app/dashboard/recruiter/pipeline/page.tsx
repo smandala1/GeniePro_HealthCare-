@@ -4,9 +4,11 @@ import { useState } from "react"
 import useSWR, { mutate } from "swr"
 import { useSearchParams } from "next/navigation"
 import { Suspense } from "react"
+import Link from "next/link"
 import {
-  Kanban, ChevronDown, ChevronRight,
-  Loader2,
+  Kanban, ChevronDown, ChevronRight, Loader2,
+  LayoutList, FileText, ExternalLink, Mail, Phone,
+  Calendar, ArrowUpDown,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -27,52 +29,48 @@ const STAGE_COLORS: Record<string, string> = {
   HIRED:     "bg-green-100 text-green-700",
 }
 
+const STATUS_BADGE: Record<string, { label: string; color: string; bg: string }> = {
+  APPLIED:   { label: "Applied",   color: "text-yellow-700", bg: "bg-yellow-100" },
+  SCREENING: { label: "Screening", color: "text-blue-700",   bg: "bg-blue-100"   },
+  INTERVIEW: { label: "Interview", color: "text-purple-700", bg: "bg-purple-100" },
+  OFFER:     { label: "Offer",     color: "text-orange-700", bg: "bg-orange-100" },
+  HIRED:     { label: "Hired",     color: "text-green-700",  bg: "bg-green-100"  },
+  REJECTED:  { label: "Rejected",  color: "text-red-600",    bg: "bg-red-100"    },
+  WITHDRAWN: { label: "Withdrawn", color: "text-gray-500",   bg: "bg-gray-100"   },
+}
+
 type Application = {
   id: string
   status: string
   appliedAt: string
-  job: { id: string; title: string; specialty: string }
+  resumeUrlSnapshot?: string | null
+  coverLetter?: string | null
+  job: { id: string; title: string; specialty: string; location: string }
   candidateProfile: {
+    id: string
     specialty?: string | null
     yearsExperience?: number | null
+    phone?: string | null
     user: { name: string; email: string; avatarUrl?: string | null }
   }
 }
 
-function PipelineContent() {
-  const searchParams = useSearchParams()
-  const jobId = searchParams.get("jobId") ?? undefined
-  const [movingId, setMovingId] = useState<string | null>(null)
+// ── Kanban view ───────────────────────────────────────────────────────────────
 
-  const url = jobId ? `/api/applications?jobId=${jobId}` : "/api/applications"
-  const { data: applications, isLoading } = useSWR<Application[]>(url, fetcher)
-
+function KanbanView({
+  applications, movingId, onMove,
+}: {
+  applications: Application[]
+  movingId: string | null
+  onMove: (id: string, status: string) => void
+}) {
   const byStage = PIPELINE_STAGES.reduce((acc, stage) => {
-    acc[stage.value] = applications?.filter((a) => a.status === stage.value) ?? []
+    acc[stage.value] = applications.filter((a) => a.status === stage.value)
     return acc
   }, {} as Record<string, Application[]>)
 
-  const rejected  = applications?.filter((a) => a.status === "REJECTED") ?? []
-  const withdrawn = applications?.filter((a) => a.status === "WITHDRAWN") ?? []
-
-  async function moveStage(appId: string, toStatus: string) {
-    setMovingId(appId)
-    await fetch(`/api/applications/${appId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: toStatus }),
-    })
-    await mutate(url)
-    setMovingId(null)
-  }
-
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {PIPELINE_STAGES.map((s) => <Skeleton key={s.value} className="h-64 rounded-xl" />)}
-      </div>
-    )
-  }
+  const rejected  = applications.filter((a) => a.status === "REJECTED")
+  const withdrawn = applications.filter((a) => a.status === "WITHDRAWN")
 
   return (
     <div className="overflow-x-auto pb-4">
@@ -87,13 +85,13 @@ function PipelineContent() {
               </div>
               <div className="space-y-2">
                 {cards.map((app) => (
-                  <CandidateCard
+                  <KanbanCard
                     key={app.id}
                     app={app}
                     currentStage={stage}
                     stages={PIPELINE_STAGES}
                     moving={movingId === app.id}
-                    onMove={(toStatus) => moveStage(app.id, toStatus)}
+                    onMove={(toStatus) => onMove(app.id, toStatus)}
                   />
                 ))}
                 {cards.length === 0 && (
@@ -142,7 +140,7 @@ function PipelineContent() {
   )
 }
 
-function CandidateCard({ app, currentStage, stages, moving, onMove }: {
+function KanbanCard({ app, currentStage, stages, moving, onMove }: {
   app: Application
   currentStage: typeof PIPELINE_STAGES[0]
   stages: typeof PIPELINE_STAGES
@@ -178,7 +176,6 @@ function CandidateCard({ app, currentStage, stages, moving, onMove }: {
 
         <p className="text-[10px] text-gray-400 mb-2">{formatRelativeTime(app.appliedAt)}</p>
 
-        {/* Actions */}
         <button
           onClick={() => setShowActions(!showActions)}
           className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-primary-500 transition-colors"
@@ -217,6 +214,245 @@ function CandidateCard({ app, currentStage, stages, moving, onMove }: {
   )
 }
 
+// ── List view ─────────────────────────────────────────────────────────────────
+
+function ListView({
+  applications, movingId, onMove,
+}: {
+  applications: Application[]
+  movingId: string | null
+  onMove: (id: string, status: string) => void
+}) {
+  const [sortBy, setSortBy] = useState<"date" | "name" | "status">("date")
+  const [sortAsc, setSortAsc] = useState(false)
+
+  function toggleSort(col: "date" | "name" | "status") {
+    if (sortBy === col) setSortAsc((a) => !a)
+    else { setSortBy(col); setSortAsc(true) }
+  }
+
+  const sorted = [...applications].sort((a, b) => {
+    let cmp = 0
+    if (sortBy === "date")   cmp = new Date(a.appliedAt).getTime() - new Date(b.appliedAt).getTime()
+    if (sortBy === "name")   cmp = a.candidateProfile.user.name.localeCompare(b.candidateProfile.user.name)
+    if (sortBy === "status") cmp = a.status.localeCompare(b.status)
+    return sortAsc ? cmp : -cmp
+  })
+
+  function SortBtn({ col, label }: { col: "date" | "name" | "status"; label: string }) {
+    return (
+      <button
+        onClick={() => toggleSort(col)}
+        className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+      >
+        {label}
+        <ArrowUpDown className={cn("h-3 w-3", sortBy === col && "text-primary-500")} />
+      </button>
+    )
+  }
+
+  if (sorted.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center">
+        <LayoutList className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+        <p className="text-gray-500 text-sm">No applications yet</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      {/* Table header */}
+      <div className="grid grid-cols-[2fr_2fr_1fr_1fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-100">
+        <SortBtn col="name" label="Candidate" />
+        <span className="text-xs font-semibold text-gray-500">Job</span>
+        <SortBtn col="date" label="Applied" />
+        <SortBtn col="status" label="Status" />
+        <span className="text-xs font-semibold text-gray-500">Actions</span>
+      </div>
+
+      <div className="divide-y divide-gray-50">
+        {sorted.map((app) => {
+          const statusInfo = STATUS_BADGE[app.status] ?? { label: app.status, color: "text-gray-600", bg: "bg-gray-100" }
+          const nextStage = PIPELINE_STAGES.find(
+            (s) => s.step === (PIPELINE_STAGES.find((x) => x.value === app.status)?.step ?? 0) + 1
+          )
+
+          return (
+            <div
+              key={app.id}
+              className="grid grid-cols-[2fr_2fr_1fr_1fr_auto] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors"
+            >
+              {/* Candidate */}
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  {getInitials(app.candidateProfile.user.name)}
+                </div>
+                <div className="min-w-0">
+                  <Link
+                    href={`/dashboard/recruiter/candidates/${app.candidateProfile.id}`}
+                    className="text-sm font-semibold text-gray-900 hover:text-primary-600 truncate block transition-colors"
+                  >
+                    {app.candidateProfile.user.name}
+                  </Link>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <a
+                      href={`mailto:${app.candidateProfile.user.email}`}
+                      className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 transition-colors truncate"
+                    >
+                      <Mail className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{app.candidateProfile.user.email}</span>
+                    </a>
+                    {app.candidateProfile.phone && (
+                      <a
+                        href={`tel:${app.candidateProfile.phone}`}
+                        className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 transition-colors shrink-0"
+                      >
+                        <Phone className="h-3 w-3" />
+                        {app.candidateProfile.phone}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Job */}
+              <div className="min-w-0">
+                <p className="text-sm text-gray-700 truncate font-medium">{app.job.title}</p>
+                <p className="text-xs text-gray-400 truncate">{app.job.location}</p>
+              </div>
+
+              {/* Applied date */}
+              <div>
+                <p className="text-sm text-gray-700">{new Date(app.appliedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                  <Calendar className="h-3 w-3" />
+                  {formatRelativeTime(app.appliedAt)}
+                </p>
+              </div>
+
+              {/* Status */}
+              <div>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusInfo.bg} ${statusInfo.color}`}>
+                  {statusInfo.label}
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 shrink-0">
+                {movingId === app.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary-500" />
+                ) : (
+                  <>
+                    {app.resumeUrlSnapshot && (
+                      <a
+                        href={app.resumeUrlSnapshot}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="View Resume"
+                        className="h-8 w-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:border-blue-300 transition-colors"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                    {nextStage && !["HIRED", "REJECTED", "WITHDRAWN"].includes(app.status) && (
+                      <button
+                        onClick={() => onMove(app.id, nextStage.value)}
+                        title={`Advance to ${nextStage.label}`}
+                        className="h-8 px-3 rounded-lg border border-gray-200 flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary-600 hover:border-primary-300 hover:bg-primary-50 transition-colors"
+                      >
+                        <ChevronRight className="h-3.5 w-3.5" /> {nextStage.label}
+                      </button>
+                    )}
+                    <Link
+                      href={`/dashboard/recruiter/candidates/${app.candidateProfile.id}`}
+                      title="View Profile"
+                      className="h-8 w-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-primary-500 hover:border-primary-300 transition-colors"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Main content ──────────────────────────────────────────────────────────────
+
+function PipelineContent() {
+  const searchParams = useSearchParams()
+  const jobId = searchParams.get("jobId") ?? undefined
+  const [view, setView] = useState<"kanban" | "list">("kanban")
+  const [movingId, setMovingId] = useState<string | null>(null)
+
+  const url = jobId ? `/api/applications?jobId=${jobId}` : "/api/applications"
+  const { data: applications, isLoading } = useSWR<Application[]>(url, fetcher)
+
+  async function moveStage(appId: string, toStatus: string) {
+    setMovingId(appId)
+    await fetch(`/api/applications/${appId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: toStatus }),
+    })
+    await mutate(url)
+    setMovingId(null)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        {PIPELINE_STAGES.map((s) => <Skeleton key={s.value} className="h-64 rounded-xl" />)}
+      </div>
+    )
+  }
+
+  const apps = applications ?? []
+
+  return (
+    <div>
+      {/* View toggle + stats */}
+      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+        <div className="flex items-center gap-3 text-sm text-gray-500">
+          <span className="font-semibold text-gray-900">{apps.length}</span> applicant{apps.length !== 1 ? "s" : ""}
+          {jobId && <span className="text-xs text-gray-400">· filtered by job</span>}
+        </div>
+        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+          <button
+            onClick={() => setView("kanban")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+              view === "kanban" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            <Kanban className="h-4 w-4" /> Kanban
+          </button>
+          <button
+            onClick={() => setView("list")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+              view === "list" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            <LayoutList className="h-4 w-4" /> List
+          </button>
+        </div>
+      </div>
+
+      {view === "kanban" ? (
+        <KanbanView applications={apps} movingId={movingId} onMove={moveStage} />
+      ) : (
+        <ListView applications={apps} movingId={movingId} onMove={moveStage} />
+      )}
+    </div>
+  )
+}
+
 export default function RecruiterPipelinePage() {
   return (
     <div className="p-6 lg:p-8 w-full">
@@ -224,7 +460,9 @@ export default function RecruiterPipelinePage() {
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
           <Kanban className="h-6 w-6 text-primary-500" /> Applicant Pipeline
         </h1>
-        <p className="text-sm text-gray-500 mt-1">Drag candidates through your hiring stages.</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Use <strong>Kanban</strong> to move candidates through stages, or <strong>List</strong> to see contact details and track who applied when.
+        </p>
       </div>
       <Suspense fallback={
         <div className="flex gap-4">

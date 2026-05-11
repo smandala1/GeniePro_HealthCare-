@@ -9,12 +9,15 @@ import { AlertCircle, Loader2, Eye, EyeOff, Stethoscope, Building2, ShieldCheck 
 import { AuthLeftPanel } from "@/components/auth/AuthLeftPanel"
 
 
-// Demo credentials per role
-const DEMO = {
-  CANDIDATE: { email: "candidate@demo.com", password: "Demo@1234" },
-  RECRUITER: { email: "sarah@atlantichealth.com", password: "Recruiter@123" },
-  ADMIN: { email: "admin@geniepro.com", password: "Admin@123" },
-}
+// Demo credentials — only available in development, never shipped to production
+const IS_DEV = process.env.NODE_ENV === "development"
+const DEMO = IS_DEV
+  ? {
+      CANDIDATE: { email: process.env.NEXT_PUBLIC_DEMO_CANDIDATE_EMAIL ?? "candidate@demo.com", password: process.env.NEXT_PUBLIC_DEMO_CANDIDATE_PASS ?? "" },
+      RECRUITER: { email: process.env.NEXT_PUBLIC_DEMO_RECRUITER_EMAIL ?? "recruiter@demo.com", password: process.env.NEXT_PUBLIC_DEMO_RECRUITER_PASS ?? "" },
+      ADMIN:     { email: process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL    ?? "admin@demo.com",     password: process.env.NEXT_PUBLIC_DEMO_ADMIN_PASS    ?? "" },
+    }
+  : null
 
 type Role = "CANDIDATE" | "RECRUITER" | "ADMIN"
 
@@ -27,7 +30,6 @@ function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPass, setShowPass] = useState(false)
-  const [remember, setRemember] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -39,6 +41,7 @@ function LoginForm() {
   }
 
   function fillDemo() {
+    if (!DEMO) return
     setEmail(DEMO[role].email)
     setPassword(DEMO[role].password)
   }
@@ -163,28 +166,6 @@ function LoginForm() {
               </div>
             </div>
 
-            {/* Remember me */}
-            <button
-              type="button"
-              onClick={() => setRemember(!remember)}
-              className="flex items-center gap-2.5 text-sm text-gray-500 hover:text-gray-700"
-            >
-              <span
-                className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                  remember
-                    ? "bg-blue-500 border-blue-500"
-                    : "border-gray-300 bg-white"
-                }`}
-              >
-                {remember && (
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12">
-                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </span>
-              Remember me for 30 days
-            </button>
-
             {/* Login button */}
             <button
               type="submit"
@@ -216,15 +197,17 @@ function LoginForm() {
             Continue with Google
           </button>
 
-          {/* Demo mode notice */}
-          <div
-            className="mt-4 p-3.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-600 cursor-pointer hover:bg-gray-100 transition-colors"
-            onClick={fillDemo}
-            title="Click to auto-fill demo credentials"
-          >
-            <span className="font-semibold text-gray-800">Demo mode.</span>{" "}
-            Credentials are pre-filled — just click Login.
-          </div>
+          {/* Demo mode notice — development only */}
+          {DEMO && (
+            <div
+              className="mt-4 p-3.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-600 cursor-pointer hover:bg-gray-100 transition-colors"
+              onClick={fillDemo}
+              title="Click to auto-fill demo credentials"
+            >
+              <span className="font-semibold text-gray-800">Demo mode.</span>{" "}
+              Click to auto-fill credentials for the selected role.
+            </div>
+          )}
 
           {/* Back to home */}
           <div className="mt-6 text-center">

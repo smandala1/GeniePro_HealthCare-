@@ -29,12 +29,25 @@ export default function CandidateSettingsPage() {
     }
     setSaving(true)
     setPwError("")
-    // Would call /api/users/[id] or a dedicated password-change endpoint
-    await new Promise((r) => setTimeout(r, 800))
-    setSaving(false)
-    setSaved(true)
-    setPasswords({ current: "", next: "", confirm: "" })
-    setTimeout(() => setSaved(false), 2000)
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: passwords.current, newPassword: passwords.next }),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setPasswords({ current: "", next: "", confirm: "" })
+        setTimeout(() => setSaved(false), 2000)
+      } else {
+        const d = await res.json().catch(() => ({}))
+        setPwError(d.error ?? "Failed to update password. Please try again.")
+      }
+    } catch {
+      setPwError("Network error. Please try again.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

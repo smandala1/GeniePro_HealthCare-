@@ -9,8 +9,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json()
-  const current = await prisma.application.findUnique({ where: { id } })
+  const current = await prisma.application.findUnique({
+    where: { id },
+    include: { job: { select: { recruiterId: true } } },
+  })
   if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  // Recruiters may only update applications for jobs they own
+  if (session.user.role === "RECRUITER") {
+    const recruiterProfile = await prisma.recruiterProfile.findUnique({ where: { userId: session.user.id } })
+    if (!recruiterProfile || current.job.recruiterId !== recruiterProfile.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+  } else if (session.user.role === "CANDIDATE") {
+    // Candidates may only withdraw their own applications
+    const candidateProfile = await prisma.candidateProfile.findUnique({ where: { userId: session.user.id } })
+    if (!candidateProfile || current.candidateId !== candidateProfile.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+    if (body.status && body.status !== "WITHDRAWN") {
+      return NextResponse.json({ error: "Candidates may only withdraw applications" }, { status: 403 })
+    }
+  }
 
   const app = await prisma.application.update({
     where: { id },

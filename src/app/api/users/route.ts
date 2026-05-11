@@ -12,8 +12,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const role = searchParams.get("role")
   const keyword = searchParams.get("keyword")
-  const page = parseInt(searchParams.get("page") || "1")
-  const limit = parseInt(searchParams.get("limit") || "20")
+  const safeInt = (val: string | null, fallback: number) => { const n = parseInt(val ?? "", 10); return Number.isFinite(n) ? n : fallback }
+  const page  = Math.max(1, safeInt(searchParams.get("page"), 1))
+  const limit = Math.max(1, Math.min(100, safeInt(searchParams.get("limit"), 20)))
 
   const where: Record<string, unknown> = {}
   if (role) where.role = role

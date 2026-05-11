@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import { writeFile, mkdir } from "fs/promises"
 import path from "path"
 
@@ -11,6 +13,11 @@ const ALLOWED_MIME_TYPES = [
 ]
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
     const formData = await req.formData()
     const file = formData.get("file") as File | null
@@ -41,8 +48,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const id = (formData.get("userId") as string) || `tmp-${Date.now()}`
-    const filename = `${id}-${Date.now()}${ext}`
+    // Always use the authenticated session user's ID — never trust client-supplied userId
+    const safeId = session.user.id.replace(/[^a-zA-Z0-9_-]/g, "")
+    const filename = `${safeId}-${Date.now()}${ext}`
     const dir = path.join(process.cwd(), "public", "uploads", "resumes")
 
     await mkdir(dir, { recursive: true })

@@ -33,13 +33,26 @@ export async function POST(req: NextRequest) {
 
   const { toId, subject, content, parentId } = await req.json()
 
+  if (!content?.trim()) {
+    return NextResponse.json({ error: "Message content cannot be empty" }, { status: 400 })
+  }
+  if (!toId) {
+    return NextResponse.json({ error: "Recipient is required" }, { status: 400 })
+  }
+
+  // Verify recipient exists
+  const recipient = await prisma.user.findUnique({ where: { id: toId }, select: { id: true } })
+  if (!recipient) {
+    return NextResponse.json({ error: "Recipient not found" }, { status: 404 })
+  }
+
   const message = await prisma.message.create({
     data: {
       fromId: session.user.id,
       toId,
-      subject,
-      content,
-      parentId,
+      subject: subject?.trim() || null,
+      content: content.trim(),
+      parentId: parentId || null,
     },
   })
   return NextResponse.json(message, { status: 201 })

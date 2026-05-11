@@ -10,6 +10,12 @@ const DEFAULTS: Record<string, string> = {
   allowNewSignups: "true",
   requireApproval: "false",
   maintenanceMode: "false",
+  smtpHost:        "",
+  smtpPort:        "587",
+  smtpUser:        "",
+  smtpPass:        "",
+  fromName:        "GeniePro Healthcare",
+  fromEmail:       "no-reply@genieprohealthcare.com",
 }
 
 export async function GET() {
@@ -31,13 +37,20 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json() as Record<string, string>
 
-  const upserts = Object.entries(body).map(([key, value]) =>
-    prisma.siteSettings.upsert({
-      where:  { key },
-      create: { key, value },
-      update: { value },
-    })
-  )
+  const allowed = new Set(Object.keys(DEFAULTS))
+  const upserts = Object.entries(body)
+    .filter(([key]) => allowed.has(key))
+    .map(([key, value]) =>
+      prisma.siteSettings.upsert({
+        where:  { key },
+        create: { key, value: String(value) },
+        update: { value: String(value) },
+      })
+    )
+
+  if (upserts.length === 0) {
+    return NextResponse.json({ error: "No valid settings keys provided" }, { status: 400 })
+  }
 
   await prisma.$transaction(upserts)
 

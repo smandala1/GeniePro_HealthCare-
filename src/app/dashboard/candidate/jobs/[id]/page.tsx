@@ -57,6 +57,7 @@ export default function JobDetailPage() {
   const [applied, setApplied]           = useState(false)
   const [saving, setSaving]             = useState(false)
   const [saved, setSaved]               = useState(false)
+  const [saveError, setSaveError]       = useState("")
   const [coverLetter, setCoverLetter]   = useState("")
   const [showCover, setShowCover]       = useState(false)
   const [applyError, setApplyError]     = useState("")
@@ -81,14 +82,24 @@ export default function JobDetailPage() {
 
   async function toggleSave() {
     setSaving(true)
-    if (saved) {
-      await fetch("/api/saved", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jobId: id }) })
-      setSaved(false)
-    } else {
-      await fetch("/api/saved", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jobId: id }) })
-      setSaved(true)
+    setSaveError("")
+    try {
+      const res = await fetch("/api/saved", {
+        method: saved ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: id }),
+      })
+      if (res.ok) {
+        setSaved(!saved)
+      } else {
+        const d = await res.json().catch(() => ({}))
+        setSaveError(d.error ?? "Failed to update saved status.")
+      }
+    } catch {
+      setSaveError("Network error.")
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   if (isLoading) {

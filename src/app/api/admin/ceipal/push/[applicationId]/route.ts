@@ -24,11 +24,25 @@ export async function POST(
     return NextResponse.json({ error: "Application not found" }, { status: 404 })
   }
 
-  // Mark as reviewed (closest available status field)
-  await prisma.application.update({
-    where: { id: applicationId },
-    data: { status: "REVIEWED" },
-  })
+  const current = await prisma.application.findUnique({ where: { id: applicationId } })
+  if (!current) return NextResponse.json({ error: "Application not found" }, { status: 404 })
 
-  return NextResponse.json({ success: true, message: "Marked as pushed to Ceipal" })
+  // Advance to SCREENING if still at APPLIED, and record a note
+  if (current.status === "APPLIED") {
+    await prisma.application.update({
+      where: { id: applicationId },
+      data: { status: "SCREENING" },
+    })
+    await prisma.applicationStatusHistory.create({
+      data: {
+        applicationId,
+        fromStatus: "APPLIED",
+        toStatus: "SCREENING",
+        changedBy: session!.user.id,
+        note: "Pushed to Ceipal ATS",
+      },
+    })
+  }
+
+  return NextResponse.json({ success: true, message: "Application advanced to Screening and noted as pushed to Ceipal" })
 }

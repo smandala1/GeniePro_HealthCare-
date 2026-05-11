@@ -319,14 +319,22 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
       profileData.compactLicense = compactLicense
       profileData.smsConsent = smsConsent
       if (Object.keys(profileData).length > 0) {
-        await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profileData) })
+        try {
+          await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profileData) })
+        } catch {
+          // Non-fatal: profile update failed, application submission continues
+        }
       }
 
-      // 5. Submit application
+      // 5. Submit application — pass resumeUrl directly so it's captured even if profile PATCH failed
       const appRes = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId: job.id, coverLetter: showCoverLetter ? form.coverLetter : null }),
+        body: JSON.stringify({
+          jobId: job.id,
+          coverLetter: showCoverLetter ? form.coverLetter : null,
+          resumeUrl: resumeUrl || undefined,
+        }),
       })
       if (!appRes.ok && appRes.status !== 409) {
         const d = await appRes.json()

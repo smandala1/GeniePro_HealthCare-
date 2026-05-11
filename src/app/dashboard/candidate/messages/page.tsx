@@ -33,15 +33,15 @@ export default function CandidateMessagesPage() {
   const [selected, setSelected] = useState<Message | null>(null)
   const [reply, setReply] = useState("")
   const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState("")
 
   async function markRead(msg: Message) {
     if (!msg.isRead) {
-      await fetch("/api/messages", {
+      fetch("/api/messages", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: msg.id }),
-      })
-      await mutate("/api/messages")
+      }).then(() => mutate("/api/messages")).catch(() => {})
     }
     setSelected(msg)
   }
@@ -49,15 +49,26 @@ export default function CandidateMessagesPage() {
   async function sendReply() {
     if (!reply.trim() || !selected) return
     setSending(true)
+    setSendError("")
     const otherId = selected.from.id === session?.user?.id ? selected.to.id : selected.from.id
-    await fetch("/api/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ toId: otherId, content: reply, parentId: selected.id }),
-    })
-    setReply("")
-    await mutate("/api/messages")
-    setSending(false)
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toId: otherId, content: reply, parentId: selected.id }),
+      })
+      if (res.ok) {
+        setReply("")
+        await mutate("/api/messages")
+      } else {
+        const d = await res.json().catch(() => ({}))
+        setSendError(d.error ?? "Failed to send reply.")
+      }
+    } catch {
+      setSendError("Network error. Please try again.")
+    } finally {
+      setSending(false)
+    }
   }
 
   const unread = messages?.filter((m) => !m.isRead && m.to.id === session?.user?.id).length ?? 0
@@ -182,22 +193,25 @@ export default function CandidateMessagesPage() {
               </div>
 
               {/* Reply box */}
-              <div className="border-t border-gray-100 p-3 flex gap-2">
-                <input
-                  type="text"
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendReply()}
-                  placeholder="Type a reply…"
-                  className="flex-1 h-10 px-3 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
-                />
-                <button
-                  onClick={sendReply}
-                  disabled={sending || !reply.trim()}
-                  className="h-10 w-10 rounded-xl bg-primary-500 hover:bg-primary-600 disabled:opacity-50 flex items-center justify-center transition-colors"
-                >
-                  <Send className="h-4 w-4 text-white" />
-                </button>
+              <div className="border-t border-gray-100 p-3 space-y-2">
+                {sendError && <p className="text-xs text-red-600 px-1">{sendError}</p>}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && sendReply()}
+                    placeholder="Type a reply…"
+                    className="flex-1 h-10 px-3 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                  />
+                  <button
+                    onClick={sendReply}
+                    disabled={sending || !reply.trim()}
+                    className="h-10 w-10 rounded-xl bg-primary-500 hover:bg-primary-600 disabled:opacity-50 flex items-center justify-center transition-colors"
+                  >
+                    <Send className="h-4 w-4 text-white" />
+                  </button>
+                </div>
               </div>
             </Card>
           )}

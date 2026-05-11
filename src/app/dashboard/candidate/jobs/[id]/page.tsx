@@ -13,7 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { formatSalary } from "@/lib/utils"
 import { SPECIALTIES, JOB_TYPES } from "@/lib/constants"
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+const fetcher = (url: string) =>
+  fetch(url).then((r) => { if (!r.ok) throw new Error("Not found"); return r.json() })
 
 const SPECIALTY_COLORS: Record<string, string> = {
   NURSING:       "bg-blue-50 text-blue-700 border border-blue-200",
@@ -39,6 +40,8 @@ type Job = {
   experienceRequired?: number | null
   postedAt: string | null
   viewCount: number
+  applyUrl?: string | null
+  isCeipal?: boolean
   recruiterProfile: {
     company: string
     logoUrl?: string | null
@@ -51,7 +54,7 @@ type Job = {
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { data: job, isLoading } = useSWR<Job>(`/api/jobs/${id}`, fetcher)
+  const { data: job, isLoading, error } = useSWR<Job>(`/api/jobs/${id}`, fetcher)
 
   const [applying, setApplying]         = useState(false)
   const [applied, setApplied]           = useState(false)
@@ -119,7 +122,7 @@ export default function JobDetailPage() {
     )
   }
 
-  if (!job) {
+  if (error || !job) {
     return (
       <div className="p-6 lg:p-8 w-full max-w-5xl">
         <Link href="/dashboard/candidate/jobs" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-8">
@@ -129,6 +132,7 @@ export default function JobDetailPage() {
       </div>
     )
   }
+
 
   const specLabel = SPECIALTIES.find((s) => s.value === job.specialty)?.label ?? job.specialty
   const typeLabel = JOB_TYPES.find((t) => t.value === job.type)?.label ?? job.type
@@ -267,6 +271,20 @@ export default function JobDetailPage() {
                   View My Applications
                 </Link>
               </div>
+            ) : job.isCeipal && job.applyUrl ? (
+              <>
+                <p className="font-bold text-white mb-1">Apply for this Job</p>
+                <p className="text-xs text-white/50 mb-4">This position is managed through GeniePro&apos;s applicant tracking system.</p>
+                <a
+                  href={job.applyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-11 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+                  style={{ background: "#2EC4B6" }}
+                >
+                  <Send className="h-4 w-4" /> Apply Now
+                </a>
+              </>
             ) : (
               <>
                 <p className="font-bold text-white mb-1">Quick Apply</p>

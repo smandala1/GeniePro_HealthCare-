@@ -294,3 +294,142 @@ export function isCeipalEnabled(): boolean {
 export function isCeipalEnabledClient(): boolean {
   return process.env.NEXT_PUBLIC_ENABLE_CEIPAL === "true"
 }
+
+// ── Custom jobs endpoint (CEIPAL_JOBS_URL) ────────────────────────────────────
+// The custom endpoint returns a different shape than the standard Ceipal API.
+
+const CUSTOM_JOBS_URL = process.env.CEIPAL_JOBS_URL ?? process.env.CEIPAL_API_URL ?? ""
+const CUSTOM_AUTH_URL = process.env.CEIPAL_AUTH_URL ?? "https://api.ceipal.com/v1/createAuthtoken/"
+
+export function isCustomJobsConfigured() {
+  return Boolean(CUSTOM_JOBS_URL && EMAIL && PASSWORD && API_KEY)
+}
+
+let customToken: string | null = null
+let customTokenExpiresAt = 0
+
+async function getCustomToken(): Promise<string> {
+  if (customToken && Date.now() < customTokenExpiresAt) return customToken
+  const res = await fetch(CUSTOM_AUTH_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: EMAIL, password: PASSWORD, api_key: API_KEY, json: 1 }),
+    cache: "no-store",
+  })
+  if (!res.ok) throw new Error(`Ceipal auth failed: HTTP ${res.status}`)
+  const text = await res.text()
+  const match = text.match(/<access_token>(.*?)<\/access_token>/)
+  if (!match) throw new Error(`Ceipal auth: no access_token in response`)
+  customToken = match[1]
+  customTokenExpiresAt = Date.now() + 55 * 60 * 1000
+  return customToken
+}
+
+export interface RawCustomCeipalJob {
+  id: string
+  job_title?: string
+  public_job_title?: string
+  job_type?: string
+  employment_type?: string
+  city?: string
+  states?: string
+  country?: string
+  pay_rate___salary?: string
+  client_bill_rate___salary?: string
+  job_description?: string
+  public_job_description?: string
+  job_status?: string
+  primary_skills?: string
+  secondary_skills?: string
+  experience?: string | number
+  number_of_positions?: string | number
+  duration?: string
+  apply_job?: string
+  apply_job_without_registration?: string
+  Created?: string
+}
+
+function stripHtmlTags(html?: string): string {
+  if (!html) return ""
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").replace(/&[a-z]+;/gi, " ").trim()
+}
+
+export function transformCustomCeipalJob(cj: RawCustomCeipalJob) {
+  const title    = cj.public_job_title || cj.job_title || "Untitled Position"
+  const skills   = [cj.primary_skills, cj.secondary_skills].filter(Boolean).join(", ")
+  const pay      = cj.pay_rate___salary || cj.client_bill_rate___salary || null
+  const desc     = cj.public_job_description || cj.job_description || title
+  const location = [cj.city, cj.states].filter(Boolean).join(", ") || cj.country || "United States"
+
+  return {
+    id:           cj.id,
+    title,
+    specialty:    inferSpecialty(title, skills),
+    type:         mapCeipalType(cj.job_type || cj.employment_type),
+    status:       (cj.job_status ?? "").toLowerCase() === "active" ? "ACTIVE" : "CLOSED",
+    location,
+    city:         cj.city   || null,
+    state:        cj.states || null,
+    salaryMin:    null,
+    salaryMax:    null,
+    salaryType:   pay ? "HOURLY" : null,
+    payDisplay:   pay ? `$${pay}/hr` : null,
+    description:  stripHtmlTags(desc),
+    requirements: skills || null,
+    benefits:     null,
+    isRemote:     false,
+    isFeatured:   false,
+    isCeipal:     true,
+    experienceRequired: cj.experience ? Number(cj.experience) : null,
+    postedAt:     cj.Created ? new Date(cj.Created).toISOString() : null,
+    viewCount:    0,
+    duration:     cj.duration || null,
+    openings:     cj.number_of_positions ? Number(cj.number_of_positions) : null,
+    applyUrl:     cj.apply_job_without_registration || cj.apply_job || null,
+    recruiterProfile: {
+      company: "GeniePro Healthcare",
+      logoUrl: null,
+      city:    cj.city   || null,
+      state:   cj.states || null,
+      description: null,
+    },
+    _count: { applications: 0 },
+  }
+}
+
+export type TransformedCeipalJob = ReturnType<typeof transformCustomCeipalJob>
+
+export async function fetchAllCustomCeipalJobs(): Promise<TransformedCeipalJob[]> {
+  const token = await getCustomToken()
+  const PAGE_SIZE = 20
+  const all: TransformedCeipalJob[] = []
+  let page = 1
+  let totalPages = 1
+
+  do {
+    const url = `${CUSTOM_JOBS_URL}?page=${page}&paging_length=${PAGE_SIZE}`
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      cache: "no-store",
+    })
+    if (!res.ok) {
+      if (res.status === 401) { customToken = null; customTokenExpiresAt = 0 }
+      throw new Error(`Ceipal jobs API error: HTTP ${res.status}`)
+    }
+    const text = await res.text()
+    const data = JSON.parse(text.replace(/[\x00-\x1F\x7F]/g, (c) =>
+      c === "\n" || c === "\r" || c === "\t" ? c : " "
+    )) as { num_pages?: number; results?: RawCustomCeipalJob[] }
+
+    totalPages = data.num_pages ?? 1
+    all.push(...(data.results ?? []).map(transformCustomCeipalJob))
+    page++
+  } while (page <= totalPages && page <= 5)
+
+  return all
+}
+
+export async function fetchCustomCeipalJobById(id: string): Promise<TransformedCeipalJob | null> {
+  const jobs = await fetchAllCustomCeipalJobs()
+  return jobs.find((j) => j.id === id) ?? null
+}

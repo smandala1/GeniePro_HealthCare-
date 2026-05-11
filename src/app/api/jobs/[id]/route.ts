@@ -3,9 +3,12 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { JobPostingSchema } from "@/lib/validations"
+import { isCustomJobsConfigured, fetchCustomCeipalJobById } from "@/lib/ceipal"
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+
+  // Try DB first
   const job = await prisma.job.findUnique({
     where: { id },
     include: {
@@ -13,9 +16,23 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
       _count: { select: { applications: true } },
     },
   })
-  if (!job) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  await prisma.job.update({ where: { id }, data: { viewCount: { increment: 1 } } })
-  return NextResponse.json(job)
+
+  if (job) {
+    await prisma.job.update({ where: { id }, data: { viewCount: { increment: 1 } } }).catch(() => {})
+    return NextResponse.json(job)
+  }
+
+  // Fall back to Ceipal for live job IDs not in DB
+  if (isCustomJobsConfigured()) {
+    try {
+      const ceipalJob = await fetchCustomCeipalJobById(id)
+      if (ceipalJob) return NextResponse.json(ceipalJob)
+    } catch {
+      // Ceipal unavailable — fall through to 404
+    }
+  }
+
+  return NextResponse.json({ error: "Not found" }, { status: 404 })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

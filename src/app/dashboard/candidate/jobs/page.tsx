@@ -22,11 +22,20 @@ const SPECIALTY_BADGE: Record<string, "default" | "success" | "secondary" | "war
   PHARMA: "warning",
 }
 
+const DATE_OPTIONS = [
+  { label: "Past 24 Hours", value: 1 },
+  { label: "Past Week",     value: 7 },
+  { label: "Past Month",    value: 30 },
+  { label: "Past 3 Months", value: 90 },
+  { label: "Any Time",      value: 0 },
+]
+
 export default function CandidateJobsPage() {
   const [specialty, setSpecialty] = useState("")
   const [type, setType] = useState("")
   const [keyword, setKeyword] = useState("")
   const [search, setSearch] = useState("")
+  const [daysAgo, setDaysAgo] = useState(90)
   const [saved, setSaved] = useState<Set<string>>(new Set())
   const [savingId, setSavingId] = useState<string | null>(null)
 
@@ -34,6 +43,7 @@ export default function CandidateJobsPage() {
   if (specialty) params.set("specialty", specialty)
   if (type) params.set("type", type)
   if (search) params.set("keyword", search)
+  if (daysAgo > 0) params.set("daysAgo", String(daysAgo))
 
   const { data, isLoading } = useSWR(`/api/jobs?${params}`, fetcher)
   const jobs: Job[] = data?.jobs ?? []
@@ -91,6 +101,13 @@ export default function CandidateJobsPage() {
             >
               <option value="">All Types</option>
               {JOB_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <select
+              value={daysAgo}
+              onChange={(e) => setDaysAgo(Number(e.target.value))}
+              className="h-10 px-3 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            >
+              {DATE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             <button
               onClick={() => setSearch(keyword)}

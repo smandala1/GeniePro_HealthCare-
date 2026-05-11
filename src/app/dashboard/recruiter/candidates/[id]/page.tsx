@@ -8,10 +8,9 @@ import {
   ExternalLink, MessageSquare, Clock, CheckCircle2, Star,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getInitials, formatRelativeTime } from "@/lib/utils"
-import { SPECIALTIES, APPLICATION_STATUSES } from "@/lib/constants"
+import { SPECIALTIES } from "@/lib/constants"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 

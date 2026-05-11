@@ -37,7 +37,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json()
 
   // Strip dangerous fields from the body before validation
-  const { recruiterId: _r, id: _id, ceipalId: _c, viewCount: _v, ...safeBody } = body
+  const STRIP = new Set(["recruiterId", "id", "ceipalId", "viewCount"])
+  const safeBody = Object.fromEntries(Object.entries(body as Record<string, unknown>).filter(([k]) => !STRIP.has(k)))
 
   // Partial validation — only validate fields that are present
   const parsed = JobPostingSchema.partial().safeParse(safeBody)

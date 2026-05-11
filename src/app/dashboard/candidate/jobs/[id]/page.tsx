@@ -199,6 +199,7 @@ export default function JobDetailPage() {
               {saved ? "Saved" : "Save"}
             </button>
           </div>
+          {saveError && <p className="text-xs text-red-500 mt-2">{saveError}</p>}
         </div>
       </div>
 

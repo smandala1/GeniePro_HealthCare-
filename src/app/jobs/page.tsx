@@ -435,6 +435,7 @@ export default function JobsPage() {
   const [specialty, setSpecialty] = useState("")
   const [jobType, setJobType] = useState("")
   const [minSalary, setMinSalary] = useState(0)
+  const [daysAgo, setDaysAgo] = useState(90)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   // Data state
@@ -453,6 +454,7 @@ export default function JobsPage() {
       if (jobType) params.set("type", jobType)
       if (activeKeyword) params.set("keyword", activeKeyword)
       if (activeLocation) params.set("location", activeLocation)
+      if (daysAgo > 0) params.set("daysAgo", String(daysAgo))
       const data = await fetcher(`/api/jobs?${params}`)
       setJobs(data.jobs ?? [])
     } catch {
@@ -460,7 +462,7 @@ export default function JobsPage() {
     } finally {
       setLoading(false)
     }
-  }, [specialty, jobType, activeKeyword, activeLocation])
+  }, [specialty, jobType, activeKeyword, activeLocation, daysAgo])
 
   useEffect(() => { fetchJobs() }, [fetchJobs])
 
@@ -470,7 +472,7 @@ export default function JobsPage() {
     : jobs
 
   // Active filter count
-  const filterCount = [specialty, jobType, minSalary > 0].filter(Boolean).length
+  const filterCount = [specialty, jobType, minSalary > 0, daysAgo !== 90].filter(Boolean).length
 
   function handleSearch() {
     setActiveKeyword(keywordInput)
@@ -481,6 +483,7 @@ export default function JobsPage() {
     setSpecialty("")
     setJobType("")
     setMinSalary(0)
+    setDaysAgo(90)
     setActiveKeyword("")
     setActiveLocation("")
     setKeywordInput("")
@@ -533,6 +536,25 @@ export default function JobsPage() {
           >
             <option value="">All Types</option>
             {JOB_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Date Posted */}
+      <div>
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Date Posted</label>
+        <div className="relative">
+          <select
+            value={daysAgo}
+            onChange={(e) => setDaysAgo(Number(e.target.value))}
+            className="w-full h-10 pl-3 pr-8 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all cursor-pointer"
+          >
+            <option value={1}>Past 24 Hours</option>
+            <option value={7}>Past Week</option>
+            <option value={30}>Past Month</option>
+            <option value={90}>Past 3 Months</option>
+            <option value={0}>Any Time</option>
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
         </div>

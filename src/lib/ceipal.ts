@@ -260,8 +260,18 @@ export function mapCeipalStatus(jobStatus?: string): string {
   return "ACTIVE"
 }
 
-export function inferSpecialty(title: string, skills?: string): string {
+// Returns null for non-healthcare jobs (IT, engineering, etc.) — caller should filter these out.
+export function inferSpecialty(title: string, skills?: string): string | null {
   const haystack = `${title} ${skills ?? ""}`.toLowerCase()
+
+  // Healthcare context guard — if present, always treat as healthcare regardless of other signals
+  const hasHealthcareContext = /\b(health|medical|clinical|patient|nurs|hospital|pharma|biotech|physician|care\b|rehab)\b/.test(haystack)
+
+  // Exclude pure IT/tech jobs that have no healthcare context
+  const isIT = /\b(software\s*(developer|engineer|architect)|web\s*(developer|engineer)|mobile\s*(developer|engineer)|devops|cloud\s*engineer|data\s*(engineer|scientist)|machine\s*learning|artificial\s*intelligence|frontend|front[\s-]end|backend|back[\s-]end|full[\s-]?stack|javascript|typescript|react\s*developer|angular\s*developer|node\.?js|\.net\s*developer|java\s*developer|php\s*developer|python\s*developer|cybersecurity|network\s*engineer|sysadmin|system\s*admin|it\s*support|help\s*desk|software\s*qa|qa\s*engineer|ui\s*ux|graphic\s*design)\b/.test(haystack)
+
+  if (isIT && !hasHealthcareContext) return null
+
   if (/\b(nurs|rn\b|lpn|np\b|cna|icu|er nurse|travel nurse|bls|acls)\b/.test(haystack))
     return "NURSING"
   if (/\b(therapist|therapy|radiolog|sonograph|ultrasound|lab|phlebotom|respiratory|rehab|pt\b|ot\b|slp|imaging)\b/.test(haystack))
@@ -360,11 +370,13 @@ export function transformCustomCeipalJob(cj: RawCustomCeipalJob) {
   const pay      = cj.pay_rate___salary || cj.client_bill_rate___salary || null
   const desc     = cj.public_job_description || cj.job_description || title
   const location = [cj.city, cj.states].filter(Boolean).join(", ") || cj.country || "United States"
+  const specialty = inferSpecialty(title, skills)
 
   return {
     id:           cj.id,
     title,
-    specialty:    inferSpecialty(title, skills),
+    specialty:    specialty ?? "NURSING", // null means excluded — caller filters by _excluded flag
+    _excluded:    specialty === null,
     type:         mapCeipalType(cj.job_type || cj.employment_type),
     status:       (cj.job_status ?? "").toLowerCase() === "active" ? "ACTIVE" : "CLOSED",
     location,
@@ -422,7 +434,8 @@ export async function fetchAllCustomCeipalJobs(): Promise<TransformedCeipalJob[]
     )) as { num_pages?: number; results?: RawCustomCeipalJob[] }
 
     totalPages = data.num_pages ?? 1
-    all.push(...(data.results ?? []).map(transformCustomCeipalJob))
+    const transformed = (data.results ?? []).map(transformCustomCeipalJob).filter((j) => !j._excluded)
+    all.push(...transformed)
     page++
   } while (page <= totalPages && page <= 5)
 

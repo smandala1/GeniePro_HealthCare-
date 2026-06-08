@@ -56,7 +56,7 @@ export function OpenJobsSection() {
   const [selectedJob, setSelectedJob] = useState<SelectedJob | null>(null)
 
   useEffect(() => {
-    fetch("/api/jobs?status=ACTIVE&limit=6")
+    fetch("/api/jobs?status=ACTIVE&limit=6&daysAgo=90")
       .then((r) => r.json())
       .then((data) => {
         setJobs(data.jobs ?? [])

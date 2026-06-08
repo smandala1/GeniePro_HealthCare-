@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
 
       const { min: salaryMin, max: salaryMax } = extractSalary(cj.pay_rates)
       const specialty = inferSpecialty(cj.position_title, cj.skills)
+      if (!specialty) { skipped++; continue } // exclude non-healthcare (IT) jobs
       const type      = mapCeipalType(cj.employment_type)
       const status    = mapCeipalStatus(cj.job_status)
       const location  = [cj.city, cj.state, cj.country].filter(Boolean).join(", ") || "Remote"

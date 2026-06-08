@@ -22,21 +22,19 @@ export async function GET(req: NextRequest) {
   const status      = searchParams.get("status") || "ACTIVE"
   const recruiterId = searchParams.get("recruiterId")
   const mine        = searchParams.get("mine") === "true"
+  const daysAgo     = safeInt(searchParams.get("daysAgo"), 0)
 
-  // ── Live Ceipal path ──────────────────────────────────────────────────────
+  // ── Live Ceipal path + locally-posted recruiter jobs ─────────────────────
   if (isCustomJobsConfigured() && !mine && !recruiterId) {
     try {
-      let jobs = await fetchAllCustomCeipalJobs()
-
-      // Filter active only
-      if (status === "ACTIVE") jobs = jobs.filter((j) => j.status === "ACTIVE")
-
-      // Apply filters
-      if (specialty) jobs = jobs.filter((j) => j.specialty === specialty)
-      if (type)      jobs = jobs.filter((j) => j.type      === type)
+      // 1. Ceipal jobs
+      let ceipalJobs = await fetchAllCustomCeipalJobs()
+      if (status === "ACTIVE") ceipalJobs = ceipalJobs.filter((j) => j.status === "ACTIVE")
+      if (specialty) ceipalJobs = ceipalJobs.filter((j) => j.specialty === specialty)
+      if (type)      ceipalJobs = ceipalJobs.filter((j) => j.type      === type)
       if (keyword) {
         const kw = keyword.toLowerCase()
-        jobs = jobs.filter((j) =>
+        ceipalJobs = ceipalJobs.filter((j) =>
           j.title.toLowerCase().includes(kw) ||
           (j.description ?? "").toLowerCase().includes(kw) ||
           (j.requirements ?? "").toLowerCase().includes(kw)
@@ -44,12 +42,44 @@ export async function GET(req: NextRequest) {
       }
       if (location) {
         const loc = location.toLowerCase()
-        jobs = jobs.filter((j) => j.location.toLowerCase().includes(loc))
+        ceipalJobs = ceipalJobs.filter((j) => j.location.toLowerCase().includes(loc))
+      }
+      if (daysAgo > 0) {
+        const cutoff = Date.now() - daysAgo * 24 * 60 * 60 * 1000
+        ceipalJobs = ceipalJobs.filter((j) => j.postedAt && new Date(j.postedAt).getTime() >= cutoff)
       }
 
-      const total     = jobs.length
-      const paginated = jobs.slice((page - 1) * limit, page * limit)
+      // 2. Recruiter-posted DB jobs (ceipalId null = not synced from Ceipal)
+      const dbWhere: Record<string, unknown> = { status, ceipalId: null }
+      if (specialty) dbWhere.specialty = specialty
+      if (type)      dbWhere.type      = type
+      if (keyword)   dbWhere.OR        = [
+        { title:       { contains: keyword } },
+        { description: { contains: keyword } },
+        { location:    { contains: keyword } },
+      ]
+      if (location) dbWhere.location = { contains: location }
+      if (daysAgo > 0) dbWhere.postedAt = { gte: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000) }
 
+      const dbJobs = await prisma.job.findMany({
+        where: dbWhere,
+        include: {
+          recruiterProfile: { select: { company: true, logoUrl: true, city: true, state: true } },
+          _count: { select: { applications: true } },
+        },
+      })
+
+      // 3. Merge and sort: featured first, then newest-first
+      const combined = [...dbJobs, ...ceipalJobs] as Array<{ isFeatured: boolean; postedAt: string | null }>
+      combined.sort((a, b) => {
+        if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1
+        const aTime = a.postedAt ? new Date(a.postedAt).getTime() : 0
+        const bTime = b.postedAt ? new Date(b.postedAt).getTime() : 0
+        return bTime - aTime
+      })
+
+      const total     = combined.length
+      const paginated = combined.slice((page - 1) * limit, page * limit)
       return NextResponse.json({ jobs: paginated, total, page, totalPages: Math.ceil(total / limit) })
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Ceipal fetch failed"
@@ -79,6 +109,7 @@ export async function GET(req: NextRequest) {
     ]
   }
   if (location) where.location = { contains: location }
+  if (daysAgo > 0) where.postedAt = { gte: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000) }
 
   try {
     const [jobs, total] = await Promise.all([

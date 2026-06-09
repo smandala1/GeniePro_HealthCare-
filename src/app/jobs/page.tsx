@@ -727,6 +727,7 @@ export default function JobsPage() {
                       title: job.title,
                       company: job.recruiterProfile.company,
                       specialty: job.specialty,
+                      applyUrl: job.applyUrl,
                     })}
                   />
                 ))}
@@ -775,6 +776,7 @@ export default function JobsPage() {
             title: selectedJob.title,
             company: selectedJob.recruiterProfile.company,
             specialty: selectedJob.specialty,
+            applyUrl: selectedJob.applyUrl,
           })}
         />
       )}

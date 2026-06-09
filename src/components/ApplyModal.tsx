@@ -188,6 +188,15 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
   const { data: session } = useSession()
   const isLoggedIn = !!session
 
+  // Ceipal jobs have an external apply URL — open it and close the modal immediately
+  useEffect(() => {
+    if (job.applyUrl) {
+      window.open(job.applyUrl, "_blank", "noopener,noreferrer")
+      onClose()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")

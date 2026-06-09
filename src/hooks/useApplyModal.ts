@@ -5,6 +5,7 @@ export type ModalJob = {
   title: string
   company: string
   specialty?: string
+  applyUrl?: string | null
 }
 
 export function useApplyModal() {

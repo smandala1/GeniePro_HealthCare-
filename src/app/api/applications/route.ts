@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApplicationSchema } from "@/lib/validations"
+import { sendApplicationNotification } from "@/lib/email"
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -101,5 +102,110 @@ export async function POST(req: NextRequest) {
   await prisma.applicationStatusHistory.create({
     data: { applicationId: app.id, toStatus: "APPLIED", changedBy: session.user.id },
   })
+
+  // ── Fire notifications (non-blocking) ────────────────────────────────────
+  void notifyNewApplication({ app, profile, session, jobId }).catch((e) =>
+    console.error("[applications] notification error:", e)
+  )
+
   return NextResponse.json(app, { status: 201 })
+}
+
+// ── Notification helper (runs after response is sent) ─────────────────────────
+async function notifyNewApplication({
+  app,
+  profile,
+  session,
+  jobId,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  profile: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  session: any
+  jobId: string
+}) {
+  const BASE_URL = process.env.NEXTAUTH_URL || "https://genieprohealthcare.com"
+
+  // Load job + recruiter + candidate details in parallel
+  const [job, candidateUser, admins] = await Promise.all([
+    prisma.job.findUnique({
+      where: { id: jobId },
+      include: { recruiterProfile: { include: { user: true } } },
+    }),
+    prisma.user.findUnique({ where: { id: session.user.id } }),
+    prisma.user.findMany({ where: { role: "ADMIN", isActive: true } }),
+  ])
+
+  if (!job || !candidateUser) return
+
+  const candidateName  = candidateUser.name
+  const candidateEmail = candidateUser.email
+  const candidatePhone = profile.phone ?? null
+  const jobTitle       = job.title
+  const jobLocation    = job.location
+  const appliedAt      = app.createdAt ?? new Date()
+  const recruiter      = job.recruiterProfile
+  const notifTitle     = `New application: ${candidateName}`
+  const notifBody      = `${candidateName} applied for "${jobTitle}"`
+
+  // ── Recruiter ────────────────────────────────────────────────────────────
+  if (recruiter) {
+    const link = `${BASE_URL}/dashboard/recruiter/applications?jobId=${jobId}`
+    await Promise.all([
+      // In-app notification
+      prisma.notification.create({
+        data: {
+          userId: recruiter.userId,
+          type:   "NEW_APPLICATION",
+          title:  notifTitle,
+          body:   notifBody,
+          link:   `/dashboard/recruiter/applications?jobId=${jobId}`,
+        },
+      }),
+      // Email
+      sendApplicationNotification({
+        to:            recruiter.user.email,
+        toName:        recruiter.user.name,
+        candidateName,
+        candidateEmail,
+        candidatePhone,
+        jobTitle,
+        jobLocation,
+        appliedAt,
+        dashboardLink: link,
+      }),
+    ])
+  }
+
+  // ── Admins ───────────────────────────────────────────────────────────────
+  const adminLink = `${BASE_URL}/dashboard/admin/applications`
+  await Promise.all(
+    admins.map((admin) =>
+      Promise.all([
+        prisma.notification.create({
+          data: {
+            userId: admin.id,
+            type:   "NEW_APPLICATION",
+            title:  notifTitle,
+            body:   notifBody,
+            link:   "/dashboard/admin/applications",
+          },
+        }),
+        sendApplicationNotification({
+          to:            admin.email,
+          toName:        admin.name,
+          candidateName,
+          candidateEmail,
+          candidatePhone,
+          jobTitle,
+          jobLocation,
+          appliedAt,
+          dashboardLink: adminLink,
+          isAdmin:       true,
+        }),
+      ])
+    )
+  )
 }

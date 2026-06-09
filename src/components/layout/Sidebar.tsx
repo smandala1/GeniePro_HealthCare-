@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { CANDIDATE_NAV, RECRUITER_NAV, ADMIN_NAV } from "@/lib/constants"
 import { cn } from "@/lib/utils"
+import { NotificationBell } from "@/components/layout/NotificationBell"
 
 type IconComponent = React.ComponentType<LucideProps>
 
@@ -165,6 +166,11 @@ export function Sidebar({ user }: SidebarProps) {
           )
         })}
       </nav>
+
+      {/* Notifications */}
+      <div className="px-2 pb-1">
+        <NotificationBell collapsed={collapsed} />
+      </div>
 
       {/* User */}
       <div className="border-t border-white/10 p-2 shrink-0">

@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react"
 import Link from "next/link"
 import {
   FileText, Search, Bookmark, CheckCircle2,
-  Clock, ChevronRight, ArrowUpRight, ArrowRight,
+  Clock, ChevronRight, ArrowUpRight, ArrowRight, User,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +28,7 @@ const STATUS_VARIANT: Record<string, "default" | "outline" | "success" | "warnin
 export default function CandidateDashboard() {
   const { data: session } = useSession()
   const { data: applications, isLoading } = useSWR("/api/applications", fetcher)
+  const { data: profile } = useSWR("/api/profile", fetcher)
 
   const total   = applications?.length ?? 0
   const active  = applications?.filter((a: { status: string }) => ["SCREENING", "INTERVIEW", "OFFER"].includes(a.status)).length ?? 0
@@ -116,6 +117,7 @@ export default function CandidateDashboard() {
 
         {/* Quick links sidebar */}
         <div className="space-y-4">
+          <ProfileCompletenessCard profile={profile} />
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-xs uppercase tracking-wide text-gray-400">Quick Actions</CardTitle>
@@ -140,6 +142,83 @@ export default function CandidateDashboard() {
         </div>
       </div>
     </div>
+  )
+}
+
+type CandidateProfile = {
+  phone?: string | null
+  resumeUrl?: string | null
+  specialty?: string | null
+  profession?: string | null
+  bio?: string | null
+  yearsExperience?: number | null
+  skills?: string
+  certifications?: string
+}
+
+const PROFILE_CHECKS: { key: keyof CandidateProfile; label: string }[] = [
+  { key: "phone",           label: "Phone number" },
+  { key: "resumeUrl",       label: "Resume" },
+  { key: "specialty",       label: "Specialty" },
+  { key: "profession",      label: "Profession" },
+  { key: "bio",             label: "Bio" },
+  { key: "yearsExperience", label: "Years of experience" },
+  { key: "skills",          label: "Skills" },
+  { key: "certifications",  label: "Certifications" },
+]
+
+function isFieldFilled(value: CandidateProfile[keyof CandidateProfile]): boolean {
+  if (value === null || value === undefined || value === "") return false
+  if (typeof value === "string") {
+    try { const arr = JSON.parse(value); return Array.isArray(arr) && arr.length > 0 } catch { /* not JSON */ }
+    return value.trim().length > 0
+  }
+  return true
+}
+
+function ProfileCompletenessCard({ profile }: { profile: CandidateProfile | null | undefined }) {
+  if (!profile) return null
+  const filled = PROFILE_CHECKS.filter(({ key }) => isFieldFilled(profile[key]))
+  const pct = Math.round((filled.length / PROFILE_CHECKS.length) * 100)
+  const missing = PROFILE_CHECKS.filter(({ key }) => !isFieldFilled(profile[key])).slice(0, 3)
+
+  const barColor = pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-yellow-400" : "bg-red-400"
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-7 w-7 rounded-lg bg-primary-50 flex items-center justify-center shrink-0">
+            <User className="h-3.5 w-3.5 text-primary-500" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs font-semibold text-gray-700">Profile Strength</p>
+            <p className="text-[11px] text-gray-400">{filled.length}/{PROFILE_CHECKS.length} fields complete</p>
+          </div>
+          <span className={`text-sm font-bold ${pct >= 80 ? "text-green-600" : pct >= 50 ? "text-yellow-600" : "text-red-500"}`}>
+            {pct}%
+          </span>
+        </div>
+        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden mb-3">
+          <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
+        </div>
+        {missing.length > 0 && (
+          <div className="space-y-1 mb-3">
+            {missing.map(({ label }) => (
+              <p key={label} className="text-[11px] text-gray-400 flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-gray-300 shrink-0" /> Add {label}
+              </p>
+            ))}
+          </div>
+        )}
+        <Link
+          href="/dashboard/candidate/profile"
+          className="flex items-center justify-center gap-1 w-full h-8 rounded-lg bg-primary-50 text-primary-600 text-xs font-medium hover:bg-primary-100 transition-colors"
+        >
+          {pct === 100 ? "View Profile" : "Complete Profile"} <ChevronRight className="h-3.5 w-3.5" />
+        </Link>
+      </CardContent>
+    </Card>
   )
 }
 

@@ -127,7 +127,6 @@ export default function SpecialtiesSection() {
 
               {/* Text content */}
               <div className="relative z-10 p-5">
-                <p className="text-xs text-white/60 font-medium mb-1">{s.count}</p>
                 <h3 className="text-xl font-bold text-white mb-1.5 leading-tight">
                   {s.label}
                 </h3>

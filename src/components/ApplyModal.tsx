@@ -128,12 +128,14 @@ function StateMultiSelect({
   label,
   helper,
   required,
+  error,
 }: {
   selected: string[]
   onChange: (states: string[]) => void
   label: string
   helper: string
   required?: boolean
+  error?: string
 }) {
   const available = ALL_STATES.filter((s) => !selected.includes(s))
 
@@ -147,17 +149,18 @@ function StateMultiSelect({
 
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-medium text-gray-700">
+      <label className={`text-sm font-medium ${error ? "text-red-500" : "text-gray-700"}`}>
         {label}{required && <span className="text-red-400 ml-1">*</span>}
       </label>
       <select
         value=""
         onChange={(e) => { addState(e.target.value); e.currentTarget.value = "" }}
-        className="h-11 w-full px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+        className={`h-11 w-full px-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${error ? "border-red-400 bg-red-50 focus:ring-red-400/30 focus:border-red-400" : "border-gray-200 bg-white focus:ring-blue-500/30 focus:border-blue-400"}`}
       >
         <option value="">Add a state…</option>
         {available.map((s) => <option key={s} value={s}>{s}</option>)}
       </select>
+      {error && <p className="text-xs text-red-500">{error}</p>}
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {selected.map((state) => (
@@ -200,6 +203,7 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [emailExists, setEmailExists] = useState(false)
   const [showPass, setShowPass] = useState(false)
   const [showCoverLetter, setShowCoverLetter] = useState(false)
@@ -241,7 +245,12 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
     }
   }, [session])
 
-  function update(k: string, v: string) { setForm((p) => ({ ...p, [k]: v })); setError(""); setEmailExists(false) }
+  function update(k: string, v: string) {
+    setForm((p) => ({ ...p, [k]: v }))
+    setError("")
+    setEmailExists(false)
+    setFieldErrors((prev) => { const n = { ...prev }; delete n[k]; return n })
+  }
 
   function addCerts(files: FileList | null) {
     if (!files) return
@@ -263,13 +272,15 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!isLoggedIn && !form.firstName.trim()) { setError("Please enter your first name."); return }
-    if (!isLoggedIn && !form.lastName.trim()) { setError("Please enter your last name."); return }
-    if (!isLoggedIn && !form.email.trim()) { setError("Please enter your email."); return }
-    if (!isLoggedIn && form.password.length < 8) { setError("Password must be at least 8 characters."); return }
-    if (!form.profession) { setError("Please select your profession."); return }
-    if (licensedStates.length === 0) { setError("Please select at least one licensed state."); return }
-    setLoading(true); setError(""); setEmailExists(false)
+    const errs: Record<string, string> = {}
+    if (!isLoggedIn && !form.firstName.trim()) errs.firstName = "Required"
+    if (!isLoggedIn && !form.lastName.trim())  errs.lastName  = "Required"
+    if (!isLoggedIn && !form.email.trim())     errs.email     = "Required"
+    if (!isLoggedIn && form.password.length < 8) errs.password = "Must be at least 8 characters"
+    if (!form.profession) errs.profession = "Please select your profession"
+    if (licensedStates.length === 0) errs.licensedStates = "Select at least one licensed state"
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    setLoading(true); setError(""); setFieldErrors({}); setEmailExists(false)
 
     try {
       // 1. Upload resume
@@ -341,7 +352,7 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           jobId: job.id,
-          coverLetter: showCoverLetter ? form.coverLetter : null,
+          coverLetter: showCoverLetter ? form.coverLetter || undefined : undefined,
           resumeUrl: resumeUrl || undefined,
         }),
       })
@@ -438,24 +449,27 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-gray-700">First Name</label>
-                      <input type="text" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} required placeholder="Jane"
-                        className="h-11 w-full px-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all" />
+                      <label className={`text-sm font-medium ${fieldErrors.firstName ? "text-red-500" : "text-gray-700"}`}>First Name <span className="text-red-400">*</span></label>
+                      <input type="text" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} placeholder="Jane"
+                        className={`h-11 w-full px-4 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${fieldErrors.firstName ? "border-red-400 bg-red-50 focus:ring-red-400/30 focus:border-red-400" : "border-gray-200 bg-white focus:ring-blue-500/30 focus:border-blue-400"}`} />
+                      {fieldErrors.firstName && <p className="text-xs text-red-500">{fieldErrors.firstName}</p>}
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-gray-700">Last Name</label>
-                      <input type="text" value={form.lastName} onChange={(e) => update("lastName", e.target.value)} required placeholder="Smith"
-                        className="h-11 w-full px-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all" />
+                      <label className={`text-sm font-medium ${fieldErrors.lastName ? "text-red-500" : "text-gray-700"}`}>Last Name <span className="text-red-400">*</span></label>
+                      <input type="text" value={form.lastName} onChange={(e) => update("lastName", e.target.value)} placeholder="Smith"
+                        className={`h-11 w-full px-4 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${fieldErrors.lastName ? "border-red-400 bg-red-50 focus:ring-red-400/30 focus:border-red-400" : "border-gray-200 bg-white focus:ring-blue-500/30 focus:border-blue-400"}`} />
+                      {fieldErrors.lastName && <p className="text-xs text-red-500">{fieldErrors.lastName}</p>}
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">Email Address</label>
-                    <input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required placeholder="you@example.com"
-                      className="h-11 w-full px-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all" />
+                    <label className={`text-sm font-medium ${fieldErrors.email ? "text-red-500" : "text-gray-700"}`}>Email Address <span className="text-red-400">*</span></label>
+                    <input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} placeholder="you@example.com"
+                      className={`h-11 w-full px-4 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${fieldErrors.email ? "border-red-400 bg-red-50 focus:ring-red-400/30 focus:border-red-400" : "border-gray-200 bg-white focus:ring-blue-500/30 focus:border-blue-400"}`} />
+                    {fieldErrors.email && <p className="text-xs text-red-500">{fieldErrors.email}</p>}
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">Phone Number</label>
-                    <input type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} required placeholder="+1 (555) 000-0000"
+                    <input type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="+1 (555) 000-0000"
                       className="h-11 w-full px-4 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all" />
                   </div>
                 </div>
@@ -491,23 +505,31 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
 
                 {/* Profession */}
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-700">
+                  <label className={`text-sm font-medium ${fieldErrors.profession ? "text-red-500" : "text-gray-700"}`}>
                     Profession / Role <span className="text-red-400">*</span>
                   </label>
-                  <select value={form.profession} onChange={(e) => update("profession", e.target.value)} required
-                    className="h-11 w-full px-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all">
+                  <select
+                    value={form.profession}
+                    onChange={(e) => update("profession", e.target.value)}
+                    className={`h-11 w-full px-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${fieldErrors.profession ? "border-red-400 bg-red-50 focus:ring-red-400/30 focus:border-red-400" : "border-gray-200 bg-white focus:ring-blue-500/30 focus:border-blue-400"}`}
+                  >
                     <option value="">Select profession…</option>
                     {PROFESSIONS.map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
+                  {fieldErrors.profession && <p className="text-xs text-red-500">{fieldErrors.profession}</p>}
                 </div>
 
                 {/* Licensed States */}
                 <StateMultiSelect
                   selected={licensedStates}
-                  onChange={setLicensedStates}
+                  onChange={(states) => {
+                    setLicensedStates(states)
+                    if (states.length > 0) setFieldErrors((prev) => { const n = { ...prev }; delete n.licensedStates; return n })
+                  }}
                   label="States Licensed to Practice"
                   helper="Select all states where you hold an active license"
                   required
+                  error={fieldErrors.licensedStates}
                 />
 
                 {/* Preferred Work Location */}
@@ -623,22 +645,21 @@ export default function ApplyModal({ job, onClose, onSuccess }: Props) {
               <section>
                 <h3 className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4">Create Your Account Password</h3>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-700">Password</label>
+                  <label className={`text-sm font-medium ${fieldErrors.password ? "text-red-500" : "text-gray-700"}`}>Password <span className="text-red-400">*</span></label>
                   <div className="relative">
                     <input
                       type={showPass ? "text" : "password"}
                       value={form.password}
                       onChange={(e) => update("password", e.target.value)}
-                      required
-                      minLength={8}
                       placeholder="Min. 8 characters"
-                      className="h-11 w-full px-4 pr-12 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+                      className={`h-11 w-full px-4 pr-12 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${fieldErrors.password ? "border-red-400 bg-red-50 focus:ring-red-400/30 focus:border-red-400" : "border-gray-200 bg-white focus:ring-blue-500/30 focus:border-blue-400"}`}
                     />
                     <button type="button" onClick={() => setShowPass(!showPass)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                       {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
+                  {fieldErrors.password && <p className="text-xs text-red-500">{fieldErrors.password}</p>}
                 </div>
               </section>
             )}

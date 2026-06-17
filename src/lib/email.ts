@@ -113,3 +113,74 @@ export async function sendApplicationNotification(p: ApplicationNotificationPara
 
   await send(p.to, subject, html)
 }
+
+export async function sendApplicationConfirmation({
+  to, name, jobTitle, company, jobLocation, dashboardLink,
+}: {
+  to: string; name: string; jobTitle: string; company: string; jobLocation: string; dashboardLink: string
+}) {
+  await send(to, `Application received: ${jobTitle}`, emailWrapper(`
+    <p style="color:#1F2937;font-size:16px;margin-top:0">Hi ${name},</p>
+    <p style="color:#6B7280;font-size:14px;line-height:1.6">
+      Great news — your application has been received! The recruiter will review your profile and reach out if there&apos;s a match.
+    </p>
+    <div style="background:#f8faff;border:1px solid #e0eaff;border-radius:12px;padding:20px;margin:20px 0">
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <tr><td style="padding:6px 0;color:#9CA3AF;width:120px">Job Title</td>
+            <td style="padding:6px 0;color:#1F2937;font-weight:600">${jobTitle}</td></tr>
+        <tr><td style="padding:6px 0;color:#9CA3AF">Company</td>
+            <td style="padding:6px 0;color:#1F2937">${company}</td></tr>
+        <tr><td style="padding:6px 0;color:#9CA3AF">Location</td>
+            <td style="padding:6px 0;color:#1F2937">${jobLocation}</td></tr>
+        <tr><td style="padding:6px 0;color:#9CA3AF">Status</td>
+            <td style="padding:6px 0;color:#16a34a;font-weight:600">✓ Submitted</td></tr>
+      </table>
+    </div>
+    <p style="color:#6B7280;font-size:13px;line-height:1.6">
+      You can track your application status and manage all your applications from your dashboard.
+    </p>
+    <div style="text-align:center;margin-top:24px">
+      <a href="${dashboardLink}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#2F80ED,#2EC4B6);color:white;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px">
+        View My Applications
+      </a>
+    </div>
+  `))
+}
+
+const STATUS_LABELS: Record<string, { label: string; color: string; message: string }> = {
+  SCREENING: { label: "Under Review",    color: "#2F80ED", message: "Your application is being reviewed by the recruiter." },
+  INTERVIEW: { label: "Interview Stage", color: "#7C3AED", message: "Congratulations! The recruiter wants to schedule an interview with you." },
+  OFFER:     { label: "Offer Extended",  color: "#D97706", message: "Great news — an offer has been extended! Log in to review the details." },
+  HIRED:     { label: "Hired! 🎉",       color: "#16a34a", message: "Congratulations — you have been hired! Welcome to the team." },
+  REJECTED:  { label: "Not Selected",    color: "#DC2626", message: "After careful consideration, the recruiter has decided to move forward with other candidates. Don't give up — keep applying!" },
+  WITHDRAWN: { label: "Withdrawn",       color: "#6B7280", message: "Your application has been withdrawn." },
+}
+
+export async function sendStatusChangeNotification({
+  to, name, jobTitle, company, newStatus, dashboardLink,
+}: {
+  to: string; name: string; jobTitle: string; company: string; newStatus: string; dashboardLink: string
+}) {
+  const info = STATUS_LABELS[newStatus]
+  if (!info) return
+  const subject = `Application update: ${jobTitle} — ${info.label}`
+  await send(to, subject, emailWrapper(`
+    <p style="color:#1F2937;font-size:16px;margin-top:0">Hi ${name},</p>
+    <p style="color:#6B7280;font-size:14px;line-height:1.6">${info.message}</p>
+    <div style="background:#f8faff;border:1px solid #e0eaff;border-radius:12px;padding:20px;margin:20px 0">
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <tr><td style="padding:6px 0;color:#9CA3AF;width:120px">Job</td>
+            <td style="padding:6px 0;color:#1F2937;font-weight:600">${jobTitle}</td></tr>
+        <tr><td style="padding:6px 0;color:#9CA3AF">Company</td>
+            <td style="padding:6px 0;color:#1F2937">${company}</td></tr>
+        <tr><td style="padding:6px 0;color:#9CA3AF">New Status</td>
+            <td style="padding:6px 0;font-weight:700;color:${info.color}">${info.label}</td></tr>
+      </table>
+    </div>
+    <div style="text-align:center;margin-top:24px">
+      <a href="${dashboardLink}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#2F80ED,#2EC4B6);color:white;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px">
+        View Application →
+      </a>
+    </div>
+  `))
+}

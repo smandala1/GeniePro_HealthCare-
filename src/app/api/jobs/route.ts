@@ -60,6 +60,7 @@ export async function GET(req: NextRequest) {
       ]
       if (location) dbWhere.location = { contains: location }
       if (daysAgo > 0) dbWhere.postedAt = { gte: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000) }
+      dbWhere.AND = [{ OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }]
 
       const dbJobs = await prisma.job.findMany({
         where: dbWhere,
@@ -110,6 +111,7 @@ export async function GET(req: NextRequest) {
   }
   if (location) where.location = { contains: location }
   if (daysAgo > 0) where.postedAt = { gte: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000) }
+  where.AND = [{ OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }]
 
   try {
     const [jobs, total] = await Promise.all([

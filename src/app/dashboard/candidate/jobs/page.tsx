@@ -5,7 +5,7 @@ import useSWR from "swr"
 import Link from "next/link"
 import {
   Search, MapPin, Clock, Bookmark, BookmarkCheck,
-  ChevronRight, Filter, Loader2, Building2,
+  ChevronRight, Filter, Loader2, Building2, Share2, Check,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -47,6 +47,11 @@ export default function CandidateJobsPage() {
 
   const { data, isLoading } = useSWR(`/api/jobs?${params}`, fetcher)
   const jobs: Job[] = data?.jobs ?? []
+
+  const { data: applications } = useSWR("/api/applications", fetcher)
+  const appliedJobIds = new Set<string>(
+    (applications ?? []).map((a: { job?: { id: string } }) => a.job?.id).filter(Boolean)
+  )
 
   async function toggleSave(jobId: string) {
     setSavingId(jobId)
@@ -142,6 +147,7 @@ export default function CandidateJobsPage() {
                 job={job}
                 isSaved={saved.has(job.id)}
                 isSaving={savingId === job.id}
+                isApplied={appliedJobIds.has(job.id)}
                 onSave={() => toggleSave(job.id)}
               />
             ))}
@@ -168,10 +174,54 @@ type Job = {
   _count: { applications: number }
 }
 
-function JobCard({ job, isSaved, isSaving, onSave }: {
+function ShareMenu({ jobId, title, company }: { jobId: string; title: string; company: string }) {
+  const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const url = typeof window !== "undefined" ? `${window.location.origin}/jobs/${jobId}` : `/jobs/${jobId}`
+  const text = encodeURIComponent(`${title} at ${company} — Apply on GeniePro Healthcare`)
+  const enc = encodeURIComponent(url)
+
+  function copy() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => { setCopied(false); setOpen(false) }, 1500)
+    })
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }}
+        className="text-gray-400 hover:text-primary-500 transition-colors mt-0.5"
+        title="Share job"
+      >
+        <Share2 className="h-4 w-4" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-6 z-20 bg-white rounded-xl border border-gray-200 shadow-lg p-2 min-w-[140px]">
+            <a href={`https://wa.me/?text=${text}%20${enc}`} target="_blank" rel="noopener noreferrer"
+              className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg">WhatsApp</a>
+            <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${enc}`} target="_blank" rel="noopener noreferrer"
+              className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg">LinkedIn</a>
+            <a href={`https://twitter.com/intent/tweet?text=${text}&url=${enc}`} target="_blank" rel="noopener noreferrer"
+              className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg">X / Twitter</a>
+            <button onClick={copy} className="flex items-center gap-1.5 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg">
+              {copied ? <><Check className="h-3.5 w-3.5 text-green-500" /> Copied!</> : "Copy Link"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function JobCard({ job, isSaved, isSaving, isApplied, onSave }: {
   job: Job
   isSaved: boolean
   isSaving: boolean
+  isApplied: boolean
   onSave: () => void
 }) {
   const specLabel = SPECIALTIES.find((s) => s.value === job.specialty)?.label ?? job.specialty
@@ -184,18 +234,21 @@ function JobCard({ job, isSaved, isSaving, onSave }: {
           <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
             <Building2 className="h-5 w-5 text-primary-500" />
           </div>
-          <button
-            onClick={onSave}
-            disabled={isSaving}
-            className="text-gray-400 hover:text-primary-500 transition-colors mt-0.5"
-            title={isSaved ? "Unsave" : "Save job"}
-          >
-            {isSaving
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : isSaved
-              ? <BookmarkCheck className="h-4 w-4 text-primary-500" />
-              : <Bookmark className="h-4 w-4" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <ShareMenu jobId={job.id} title={job.title} company={job.recruiterProfile.company} />
+            <button
+              onClick={onSave}
+              disabled={isSaving}
+              className="text-gray-400 hover:text-primary-500 transition-colors mt-0.5"
+              title={isSaved ? "Unsave" : "Save job"}
+            >
+              {isSaving
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : isSaved
+                ? <BookmarkCheck className="h-4 w-4 text-primary-500" />
+                : <Bookmark className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
 
         <h3 className="font-semibold text-gray-900 text-sm leading-snug mb-1 line-clamp-2">
@@ -210,6 +263,7 @@ function JobCard({ job, isSaved, isSaving, onSave }: {
           <Badge variant="outline" className="text-[11px]">{typeLabel}</Badge>
           {job.isRemote && <Badge variant="secondary" className="text-[11px]">Remote</Badge>}
           {job.isFeatured && <Badge variant="default" className="text-[11px]">Featured</Badge>}
+          {isApplied && <Badge variant="success" className="text-[11px]">✓ Applied</Badge>}
         </div>
 
         <div className="space-y-1 mb-4">

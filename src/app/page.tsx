@@ -4,7 +4,6 @@ import Navbar from "@/components/landing/Navbar"
 import HeroSection from "@/components/landing/HeroSection"
 import HowItWorks from "@/components/landing/HowItWorks"
 import ReviewsSection from "@/components/landing/ReviewsSection"
-import ReferralBanner from "@/components/landing/ReferralBanner"
 import SpecialtiesSection from "@/components/landing/SpecialtiesSection"
 import CTABanner from "@/components/landing/CTABanner"
 import { OpenJobsSection } from "@/components/home/OpenJobsSection"
@@ -23,9 +22,6 @@ export default function Home() {
       {/* OpenJobsSection renders its own header + grid */}
       <OpenJobsSection />
       <ReviewsSection />
-      <ReferralBanner />
-
-   
 
       <CTABanner />
 

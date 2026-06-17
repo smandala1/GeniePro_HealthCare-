@@ -5,7 +5,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { useSession, signOut } from "next-auth/react"
 import { Menu, X, ChevronDown, User, LogOut, LayoutDashboard } from "lucide-react"
-import EmployerModal from "@/components/EmployerModal"
 import ContactPopup from "@/components/ContactPopup"
 
 const NAV_LINKS = [
@@ -19,7 +18,6 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [employerModalOpen, setEmployerModalOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
   const [logoError, setLogoError] = useState(false)
 
@@ -101,9 +99,8 @@ export default function Navbar() {
               </Link>
             ))}
 
-            <button
-              type="button"
-              onClick={() => setEmployerModalOpen(true)}
+            <Link
+              href="/for-employers"
               className="relative inline-block text-sm font-medium text-gray-500 pb-0.5
                 hover:text-[#2F80ED] transition-colors duration-200
                 after:content-[''] after:absolute after:bottom-0 after:left-0
@@ -111,7 +108,7 @@ export default function Navbar() {
                 after:transition-all after:duration-200 hover:after:w-full"
             >
               For Employers
-            </button>
+            </Link>
 
             <div className="relative">
               <button
@@ -259,15 +256,15 @@ export default function Navbar() {
                   {label}
                 </Link>
               ))}
-              <button
-                type="button"
-                onClick={() => { setMobileOpen(false); setEmployerModalOpen(true) }}
-                className="px-6 py-3.5 text-sm font-medium text-gray-600 text-left
+              <Link
+                href="/for-employers"
+                onClick={() => setMobileOpen(false)}
+                className="px-6 py-3.5 text-sm font-medium text-gray-600
                   hover:text-[#2F80ED] hover:bg-gray-50 border-b border-gray-100
-                  transition-colors"
+                  transition-colors block"
               >
                 For Employers
-              </button>
+              </Link>
               <button
                 type="button"
                 onClick={() => { setMobileOpen(false); setContactOpen(true) }}
@@ -346,7 +343,6 @@ export default function Navbar() {
         )}
       </header>
 
-      <EmployerModal isOpen={employerModalOpen} onClose={() => setEmployerModalOpen(false)} />
     </>
   )
 }

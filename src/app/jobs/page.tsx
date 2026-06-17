@@ -7,7 +7,7 @@ import {
   Search, MapPin, Clock, Briefcase, Building2,
   DollarSign, X, Filter, ChevronDown, Star, Users,
   ArrowLeft, CheckCircle2, Loader2, SlidersHorizontal,
-  ArrowRight, Send,
+  ArrowRight, Send, Share2, Check,
 } from "lucide-react"
 import { SPECIALTIES, JOB_TYPES } from "@/lib/constants"
 import ApplyModal from "@/components/ApplyModal"
@@ -87,6 +87,61 @@ function compactSalary(min?: number | null, max?: number | null) {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
+// ─── Share Menu ──────────────────────────────────────────────────────────────
+
+function ShareMenu({ jobId, title, company }: { jobId: string; title: string; company: string }) {
+  const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const url = typeof window !== "undefined"
+    ? `${window.location.origin}/jobs/${jobId}`
+    : `/jobs/${jobId}`
+  const text = encodeURIComponent(`${title} at ${company} — Apply on GeniePro Healthcare`)
+  const encodedUrl = encodeURIComponent(url)
+
+  function copy() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => { setCopied(false); setOpen(false) }, 1500)
+    })
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }}
+        className="h-10 w-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:text-primary-500 hover:border-primary-200 transition-colors"
+        title="Share job"
+      >
+        <Share2 className="h-4 w-4" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 bg-white rounded-xl border border-gray-200 shadow-lg p-2 min-w-[140px]">
+            <a href={`https://wa.me/?text=${text}%20${encodedUrl}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+              WhatsApp
+            </a>
+            <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+              LinkedIn
+            </a>
+            <a href={`https://twitter.com/intent/tweet?text=${text}&url=${encodedUrl}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+              X / Twitter
+            </a>
+            <button onClick={copy}
+              className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+              {copied ? <><Check className="h-3.5 w-3.5 text-green-500" /> Copied!</> : "Copy Link"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Job Card ────────────────────────────────────────────────────────────────
 
 function JobCard({
@@ -149,7 +204,7 @@ function JobCard({
         {job.description.replace(/<[^>]*>/g, "")}
       </p>
 
-      {/* Two buttons */}
+      {/* Action buttons */}
       <div className="flex gap-2 mt-auto">
         <button
           onClick={onView}
@@ -157,6 +212,7 @@ function JobCard({
         >
           View Details
         </button>
+        <ShareMenu jobId={job.id} title={job.title} company={job.recruiterProfile.company} />
         <button
           onClick={onApply}
           className="flex-1 h-10 flex items-center justify-center gap-1.5 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90"

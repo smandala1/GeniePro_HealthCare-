@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApplicationSchema } from "@/lib/validations"
-import { sendApplicationNotification } from "@/lib/email"
+import { sendApplicationNotification, sendApplicationConfirmation } from "@/lib/email"
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -107,6 +107,7 @@ export async function POST(req: NextRequest) {
   void notifyNewApplication({ app, profile, session, jobId }).catch((e) =>
     console.error("[applications] notification error:", e)
   )
+  void notifyCandidateConfirmation({ session, jobId }).catch(() => {})
 
   return NextResponse.json(app, { status: 201 })
 }
@@ -208,4 +209,22 @@ async function notifyNewApplication({
       ])
     )
   )
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function notifyCandidateConfirmation({ session, jobId }: { session: any; jobId: string }) {
+  const BASE_URL = process.env.NEXTAUTH_URL || "https://genieprohealthcare.com"
+  const [candidateUser, job] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session.user.id } }),
+    prisma.job.findUnique({ where: { id: jobId }, include: { recruiterProfile: { select: { company: true } } } }),
+  ])
+  if (!candidateUser || !job) return
+  await sendApplicationConfirmation({
+    to:            candidateUser.email,
+    name:          candidateUser.name,
+    jobTitle:      job.title,
+    company:       job.recruiterProfile.company,
+    jobLocation:   job.location,
+    dashboardLink: `${BASE_URL}/dashboard/candidate/applications`,
+  })
 }

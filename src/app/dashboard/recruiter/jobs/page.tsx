@@ -4,7 +4,7 @@ import { useState } from "react"
 import useSWR, { mutate } from "swr"
 import {
   Briefcase, Plus, Edit3, Eye,
-  Loader2, Search, CheckCircle2, Clock, BarChart3,
+  Loader2, Search, CheckCircle2, Clock, BarChart3, Sparkles,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -46,6 +46,7 @@ type PostJobForm = {
   requirements: string
   benefits: string
   experienceRequired: string
+  expiresAt: string
   publish: boolean
 }
 
@@ -53,7 +54,7 @@ const EMPTY_FORM: PostJobForm = {
   title: "", specialty: "", type: "", location: "",
   salaryMin: "", salaryMax: "", description: "",
   requirements: "", benefits: "", experienceRequired: "",
-  publish: false,
+  expiresAt: "", publish: false,
 }
 
 export default function RecruiterJobsPage() {
@@ -61,6 +62,8 @@ export default function RecruiterJobsPage() {
   const [editingJobId, setEditingJobId] = useState<string | null>(null)
   const [form, setForm] = useState<PostJobForm>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
+  const [formatting, setFormatting] = useState(false)
+  const [formatSuccess, setFormatSuccess] = useState(false)
   const [formError, setFormError] = useState("")
   const [filter, setFilter] = useState("")
 
@@ -81,6 +84,7 @@ export default function RecruiterJobsPage() {
           requirements:       data.requirements ?? "",
           benefits:           data.benefits ?? "",
           experienceRequired: data.experienceRequired ? String(data.experienceRequired) : "",
+          expiresAt:          data.expiresAt ? new Date(data.expiresAt).toISOString().slice(0, 10) : "",
           publish:            data.status === "ACTIVE",
         })
         setShowForm(true)
@@ -101,6 +105,7 @@ export default function RecruiterJobsPage() {
 
   const { data, isLoading } = useSWR("/api/jobs?mine=true&status=ACTIVE&limit=50", fetcher)
   const { data: drafts } = useSWR("/api/jobs?mine=true&status=DRAFT&limit=50", fetcher)
+  const { data: companyProfile } = useSWR("/api/recruiter-profile", fetcher)
 
   const jobs: Job[] = [
     ...(data?.jobs ?? []),
@@ -119,6 +124,45 @@ export default function RecruiterJobsPage() {
     setForm((p) => ({ ...p, [field]: value }))
   }
 
+  async function formatWithAI() {
+    if (!form.title || !form.description) {
+      setFormError("Add a job title and description before formatting.")
+      return
+    }
+    setFormatting(true)
+    setFormError("")
+    setFormatSuccess(false)
+    try {
+      const res = await fetch("/api/jobs/format", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title:        form.title,
+          description:  form.description,
+          requirements: form.requirements,
+          benefits:     form.benefits,
+          company:      companyProfile?.company ?? "",
+          location:     form.location,
+          type:         form.type,
+        }),
+      })
+      const d = await res.json()
+      if (!res.ok) { setFormError(d.error || "AI formatting failed."); return }
+      setForm((p) => ({
+        ...p,
+        description:  d.description  ?? p.description,
+        requirements: d.requirements ?? p.requirements,
+        benefits:     d.benefits     ?? p.benefits,
+      }))
+      setFormatSuccess(true)
+      setTimeout(() => setFormatSuccess(false), 4000)
+    } catch {
+      setFormError("AI formatting failed. Please try again.")
+    } finally {
+      setFormatting(false)
+    }
+  }
+
   async function submitJob(publish: boolean) {
     setSubmitting(true)
     setFormError("")
@@ -128,6 +172,7 @@ export default function RecruiterJobsPage() {
       salaryMin:          toInt(form.salaryMin),
       salaryMax:          toInt(form.salaryMax),
       experienceRequired: toInt(form.experienceRequired),
+      expiresAt:          form.expiresAt ? form.expiresAt : null,
       publish,
     }
     const res = editingJobId
@@ -230,15 +275,52 @@ export default function RecruiterJobsPage() {
               <Field label="Years Experience Required">
                 <input type="number" min={0} value={form.experienceRequired} onChange={(e) => update("experienceRequired", e.target.value)} placeholder="e.g. 2" className={inputCls} />
               </Field>
+              <Field label="Expiry Date (optional)">
+                <input
+                  type="date"
+                  value={form.expiresAt}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => update("expiresAt", e.target.value)}
+                  className={inputCls}
+                />
+              </Field>
             </div>
+            {/* AI Format banner */}
+            <div className="rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 to-teal-50 p-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,#2F80ED,#2EC4B6)" }}>
+                  <Sparkles className="h-4 w-4 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-800">AI Format</p>
+                  <p className="text-xs text-gray-500">Paste any rough notes below, then click to auto-format into a professional LinkedIn-style post</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={formatWithAI}
+                disabled={formatting}
+                className="flex items-center gap-2 h-10 px-5 rounded-xl text-sm font-bold transition-all shrink-0 disabled:opacity-60"
+                style={{ background: "linear-gradient(135deg,#2F80ED,#2EC4B6)", color: "white" }}
+              >
+                {formatting
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Formatting…</>
+                  : <><Sparkles className="h-4 w-4" /> Format with AI</>}
+              </button>
+            </div>
+            {formatSuccess && (
+              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
+                <CheckCircle2 className="h-4 w-4 shrink-0" /> Done! Description has been formatted. Review and edit before publishing.
+              </div>
+            )}
             <Field label="Job Description">
-              <textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={4} placeholder="Describe the role, responsibilities, and what makes it great…" className={`${inputCls} h-auto`} />
+              <textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={7} placeholder="Describe the role, responsibilities, and what makes it great…" className={`${inputCls} h-auto`} />
             </Field>
             <Field label="Requirements">
-              <textarea value={form.requirements} onChange={(e) => update("requirements", e.target.value)} rows={3} placeholder="Required qualifications, licenses, certifications…" className={`${inputCls} h-auto`} />
+              <textarea value={form.requirements} onChange={(e) => update("requirements", e.target.value)} rows={4} placeholder="Required qualifications, licenses, certifications…" className={`${inputCls} h-auto`} />
             </Field>
             <Field label="Benefits (optional)">
-              <textarea value={form.benefits} onChange={(e) => update("benefits", e.target.value)} rows={2} placeholder="Health insurance, 401k, sign-on bonus…" className={`${inputCls} h-auto`} />
+              <textarea value={form.benefits} onChange={(e) => update("benefits", e.target.value)} rows={3} placeholder="Health insurance, 401k, sign-on bonus…" className={`${inputCls} h-auto`} />
             </Field>
             <div className="flex gap-3">
               <button

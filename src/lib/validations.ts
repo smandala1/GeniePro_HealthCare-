@@ -38,6 +38,7 @@ export const JobPostingSchema = z.object({
   shiftType: z.string().optional(),
   experienceRequired: z.number().min(0).optional().nullable(),
   isFeatured: z.boolean().default(false),
+  expiresAt: z.coerce.date().optional().nullable(),
 })
 
 export const ApplicationSchema = z.object({

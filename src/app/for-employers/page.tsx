@@ -1,5 +1,7 @@
 import { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
+import Navbar from "@/components/landing/Navbar"
 import {
   CheckCircle2, Briefcase, Bell, MessageSquare,
   FileText, Shield, Star, ArrowRight, Mail,
@@ -86,60 +88,62 @@ export default function ForEmployersPage() {
   return (
     <div className="min-h-screen bg-white">
 
-      {/* ── Navbar ── */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="font-black text-lg">
-            <span style={{ color: "#2F80ED" }}>Genie</span>
-            <span style={{ color: "#2EC4B6" }}>Pro</span>
-            <span className="text-gray-500 text-sm font-normal ml-1">Healthcare</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/auth/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 transition-colors">
-              Sign In
-            </Link>
-            <Link
-              href="/auth/register?role=RECRUITER"
-              className="text-sm font-semibold text-white px-4 py-2 rounded-full transition-opacity hover:opacity-90"
-              style={{ background: "linear-gradient(135deg,#2F80ED,#2EC4B6)" }}
-            >
-              Post a Job Free
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* ── Hero ── */}
-      <section style={{ background: "#0f1f38" }} className="relative overflow-hidden">
-        {/* Decorative glow */}
-        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-10" style={{ background: "radial-gradient(circle,#2EC4B6,transparent)" }} />
-        <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full opacity-10" style={{ background: "radial-gradient(circle,#2F80ED,transparent)" }} />
+      <section className="relative bg-white overflow-hidden py-20 lg:py-28 border-b border-gray-100">
+        {/* Decorative blobs */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div style={{
+            position: "absolute", top: "-120px", right: "-120px",
+            width: "480px", height: "480px",
+            background: "radial-gradient(circle, rgba(46,196,182,0.18) 0%, transparent 70%)",
+            filter: "blur(50px)",
+          }} />
+          <div style={{
+            position: "absolute", bottom: "-80px", left: "-80px",
+            width: "360px", height: "360px",
+            background: "radial-gradient(circle, rgba(47,128,237,0.13) 0%, transparent 70%)",
+            filter: "blur(44px)",
+          }} />
+          <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="for-employers-dots" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+                <circle cx="1.5" cy="1.5" r="1.4" fill="#2EC4B6" opacity="0.15" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#for-employers-dots)" />
+          </svg>
+        </div>
 
-        <div className="relative max-w-6xl mx-auto px-6 py-24 lg:py-32 text-center">
-          <p className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: "#2EC4B6" }}>
+        <div className="relative max-w-4xl mx-auto px-6 text-center" style={{ zIndex: 1 }}>
+          <span
+            className="inline-block text-sm font-semibold px-4 py-1 rounded-full border mb-6"
+            style={{ background: "#EFF9F8", color: "#2EC4B6", borderColor: "rgba(46,196,182,0.35)" }}
+          >
             For Employers &amp; Staffing Agencies
-          </p>
-          <h1 className="text-4xl lg:text-6xl font-black text-white leading-tight mb-6">
+          </span>
+          <h1 className="text-4xl lg:text-6xl font-black leading-[1.08] tracking-tight mb-6" style={{ color: "#1F2937" }}>
             Find Top Healthcare Talent,{" "}
             <span style={{ background: "linear-gradient(135deg,#2F80ED,#2EC4B6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               Faster.
             </span>
           </h1>
-          <p className="text-lg text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
             GeniePro Healthcare connects you with thousands of verified nurses, allied health professionals,
             and clinical staff across all 50 states — built exclusively for healthcare hiring.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/auth/register?role=RECRUITER"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-white font-bold text-sm transition-opacity hover:opacity-90"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-white font-bold text-sm transition-all hover:scale-[1.03] hover:shadow-lg"
               style={{ background: "linear-gradient(135deg,#2F80ED,#2EC4B6)" }}
             >
               Post a Job Free <ArrowRight className="h-4 w-4" />
             </Link>
             <a
               href="mailto:hiring@genieprohealthcare.com"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-sm border border-white/20 text-white/80 hover:border-white/40 hover:text-white transition-all"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-sm border-2 border-gray-200 text-gray-600 hover:border-[#2F80ED] hover:text-[#2F80ED] transition-all"
             >
               <Mail className="h-4 w-4" /> Talk to Our Team
             </a>
@@ -206,20 +210,28 @@ export default function ForEmployersPage() {
       </section>
 
       {/* ── Why GeniePro ── */}
-      <section style={{ background: "#0f1f38" }} className="py-24">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="relative bg-white py-24 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div style={{
+            position: "absolute", top: "50%", left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "800px", height: "500px",
+            background: "radial-gradient(ellipse, rgba(47,128,237,0.06) 0%, transparent 68%)",
+            filter: "blur(24px)",
+          }} />
+        </div>
+        <div className="relative max-w-6xl mx-auto px-6" style={{ zIndex: 1 }}>
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#2EC4B6" }}>Why GeniePro</p>
-              <h2 className="text-3xl font-black text-white mb-5">Built for healthcare hiring — not generic job boards</h2>
-              <p className="text-white/60 leading-relaxed mb-8">
+              <h2 className="text-3xl font-black mb-5" style={{ color: "#1F2937" }}>Built for healthcare hiring — not generic job boards</h2>
+              <p className="text-gray-500 leading-relaxed mb-8">
                 Generic job boards bury your healthcare listings under hundreds of unrelated IT and corporate roles.
                 GeniePro is healthcare-only — every candidate, every job, every search is specific to your specialty.
               </p>
               <Link
                 href="/auth/register?role=RECRUITER"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-white font-semibold text-sm transition-opacity hover:opacity-90"
-                style={{ background: "linear-gradient(135deg,#2F80ED,#2EC4B6)" }}
+                className="btn-gradient inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm"
               >
                 Get Started Free <ArrowRight className="h-4 w-4" />
               </Link>
@@ -228,7 +240,7 @@ export default function ForEmployersPage() {
               {REASONS.map((r) => (
                 <li key={r} className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" style={{ color: "#2EC4B6" }} />
-                  <span className="text-white/70 text-sm leading-relaxed">{r}</span>
+                  <span className="text-gray-600 text-sm leading-relaxed">{r}</span>
                 </li>
               ))}
             </ul>
@@ -248,14 +260,22 @@ export default function ForEmployersPage() {
       </section>
 
       {/* ── Bottom CTA ── */}
-      <section className="py-24" style={{ background: "linear-gradient(135deg,#2F80ED,#2EC4B6)" }}>
-        <div className="max-w-4xl mx-auto px-6 text-center">
+      <section className="py-24 relative overflow-hidden" style={{ background: "linear-gradient(135deg,#2F80ED,#2EC4B6)" }}>
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+          aria-hidden="true"
+        />
+        <div className="relative max-w-4xl mx-auto px-6 text-center" style={{ zIndex: 1 }}>
           <h2 className="text-3xl font-black text-white mb-4">Ready to find your next hire?</h2>
           <p className="text-white/80 mb-10 text-lg">Create your free recruiter account and post your first job in under 5 minutes.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/auth/register?role=RECRUITER"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-white rounded-full font-bold text-sm transition-all hover:shadow-lg"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-white rounded-full font-bold text-sm transition-all hover:shadow-lg hover:scale-[1.02]"
               style={{ color: "#2F80ED" }}
             >
               Post a Job Free <ArrowRight className="h-4 w-4" />
@@ -270,8 +290,8 @@ export default function ForEmployersPage() {
         </div>
       </section>
 
-      {/* ── Contact footer ── */}
-      <section className="py-12 border-t border-gray-100">
+      {/* ── Contact ── */}
+      <section className="py-12 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid sm:grid-cols-3 gap-8 text-center sm:text-left">
             <div>
@@ -291,16 +311,31 @@ export default function ForEmployersPage() {
               <p className="text-sm text-gray-500">925 North Point Pkwy. Ste 130, Alpharetta, GA 30005</p>
             </div>
           </div>
-          <div className="mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
-            <p>© {new Date().getFullYear()} GeniePro Healthcare. All rights reserved.</p>
-            <div className="flex gap-4">
-              <Link href="/jobs" className="hover:text-gray-600 transition-colors">Browse Jobs</Link>
-              <Link href="/about" className="hover:text-gray-600 transition-colors">About</Link>
-              <Link href="/auth/register" className="hover:text-gray-600 transition-colors">For Candidates</Link>
-            </div>
-          </div>
         </div>
       </section>
+
+      {/* ── Footer ── */}
+      <footer className="bg-gray-900 py-10">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-5">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/GeniePro Health.png"
+              alt="GeniePro Healthcare"
+              width={120}
+              height={40}
+              style={{ mixBlendMode: "screen", objectFit: "contain" }}
+            />
+            <span className="text-sm text-white/40">
+              © {new Date().getFullYear()} GeniePro Healthcare · Alpharetta, GA
+            </span>
+          </div>
+          <div className="flex items-center gap-6 text-xs text-white/35">
+            <Link href="/jobs" className="hover:text-white/70 transition-colors">Browse Jobs</Link>
+            <Link href="/about" className="hover:text-white/70 transition-colors">About</Link>
+            <Link href="/auth/register" className="hover:text-white/70 transition-colors">For Candidates</Link>
+          </div>
+        </div>
+      </footer>
 
     </div>
   )

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import useSWR, { mutate } from "swr"
 import {
-  Briefcase, Plus, Edit3, Eye,
+  Briefcase, Plus, Edit3, Eye, Trash2,
   Loader2, Search, CheckCircle2, Clock, BarChart3, Sparkles,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -66,6 +66,7 @@ export default function RecruiterJobsPage() {
   const [formatSuccess, setFormatSuccess] = useState(false)
   const [formError, setFormError] = useState("")
   const [filter, setFilter] = useState("")
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   function openEdit(job: Job) {
     setEditingJobId(job.id)
@@ -94,6 +95,23 @@ export default function RecruiterJobsPage() {
         setFormError("Failed to load job details. Please try again.")
         setShowForm(true)
       })
+  }
+
+  async function handleDelete(job: Job) {
+    if (!window.confirm(`Delete "${job.title}"? This will remove it from your listings.`)) return
+    setDeletingId(job.id)
+    try {
+      const res = await fetch(`/api/jobs/${job.id}`, { method: "DELETE" })
+      if (res.ok) {
+        await mutate("/api/jobs?mine=true&status=ACTIVE&limit=50")
+        await mutate("/api/jobs?mine=true&status=DRAFT&limit=50")
+      } else {
+        const d = await res.json().catch(() => ({}))
+        window.alert(d.error || "Failed to delete job. Please try again.")
+      }
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   function closeForm() {
@@ -406,6 +424,16 @@ export default function RecruiterJobsPage() {
                       title="Edit job"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(job)}
+                      disabled={deletingId === job.id}
+                      className="h-8 w-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors disabled:opacity-50"
+                      title="Delete job"
+                    >
+                      {deletingId === job.id
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <Trash2 className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                 </CardContent>

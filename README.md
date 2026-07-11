@@ -83,6 +83,9 @@ CEIPAL_USERNAME=your_ceipal_email@example.com
 CEIPAL_PASSWORD=your_ceipal_password
 CEIPAL_API_KEY=your_ceipal_api_key
 NEXT_PUBLIC_ENABLE_CEIPAL=false
+
+# Cron (optional — used to auto-expire old job postings)
+CRON_SECRET=a_long_random_string
 ```
 
 ### Database Setup
@@ -136,6 +139,19 @@ GeniePro supports syncing job postings directly from [Ceipal ATS](https://www.ce
 3. Click **Sync Jobs from Ceipal**
 
 Jobs are upserted into the local database and become immediately visible on the platform. The integration uses token-based authentication with automatic refresh.
+
+## Job Expiration
+
+Recruiters can delete a posting at any time from **Dashboard → Job Postings** (this closes the listing; application history is preserved). Recruiter-posted jobs that stay `ACTIVE` for more than 3 weeks are auto-expired by:
+
+```
+GET or POST /api/cron/expire-jobs
+Authorization: Bearer <CRON_SECRET>
+```
+
+Optional `?days=21` overrides the age threshold. Ceipal-synced jobs are left untouched (managed by the Ceipal sync).
+
+This project deploys on Vercel, so it's scheduled via [Vercel Cron](https://vercel.com/docs/cron-jobs) — see `vercel.json`, which hits this route daily at 06:00 UTC. Vercel automatically sends `Authorization: Bearer $CRON_SECRET`, so just set `CRON_SECRET` in the project's Vercel environment variables (Project → Settings → Environment Variables) and the schedule activates on deploy. No extra setup needed.
 
 ---
 
